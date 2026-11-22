@@ -1,0 +1,6 @@
+{
+  "name": "HRConnect",
+  "description": "India-first HR professional consultation and income marketplace connecting customers with verified HR experts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

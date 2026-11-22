@@ -1,0 +1,17 @@
+{
+  "name": "hrconnect-marketplace-backend",
+  "version": "1.0.0",
+  "description": "Server-side Razorpay payment verification, webhook idempotency, Google Calendar/Meet attendance sync, and ledger payout backend for HRConnect.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test backend.test.js",
+    "test:emulator": "firebase emulators:exec --only firestore --project demo-no-project \"node --test backend.test.js\""
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.1"
+  }
+}

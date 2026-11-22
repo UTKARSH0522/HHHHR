@@ -1,0 +1,1205 @@
+Build a mobile app: # BUILD A COMPLETE FULL-STACK APPLICATION: HRCONNECT
+
+India-First HR Professional Consultation & Income Marketplace
+You are acting as a senior product architect, UI/UX designer, full-stack engineer, database architect, security engineer and QA engineer.
+
+Your task is to design and build a complete, functional, responsive, production-oriented MVP of HRConnect.
+
+This is not a simple landing page, UI prototype, static website or generic HR software.
+
+Build the actual application with a working frontend, backend, database, authentication, role-based permissions, expert marketplace, booking engine, payments, dashboards, notifications and admin management.
+
+The application must be designed around one central business objective:
+
+**Help HR professionals earn additional income by monetising their HR knowledge, skills and professional experience through paid consultations.**
+Customers should be able to discover qualified HR professionals, understand their expertise, select consultation services, book appointments and pay online.
+
+HR professionals should be able to create professional profiles, publish consultation services, manage their availability, receive bookings, consult customers and track their earnings.
+
+HRConnect earns revenue by charging a commission on successful consultations.
+
+# 1. PRODUCT VISION AND BUSINESS MODEL
+What HRConnect actually does
+HRConnect is an exclusive professional marketplace for HR expertise.
+
+It connects two groups:
+
+Supply side: HR professionals
+Working HR professionals, independent HR consultants, HR leaders, recruiters and experienced people-management specialists can:
+
+Register as HR experts.
+Apply to become verified professionals.
+Create detailed professional profiles.
+Showcase their experience and expertise.
+Publish paid consultation services.
+Set their own consultation prices.
+Define their weekly availability.
+Accept paid consultation bookings.
+Conduct consultations online.
+Track completed consultations.
+View earnings and platform commissions.
+Request payouts.
+Build a reputation through customer reviews.
+The primary value proposition is that HR professionals can earn additional income from their existing knowledge without having to build an independent audience, become influencers or personally manage an entire customer acquisition system.
+
+Demand side: Customers
+Customers can include individuals, job seekers, employees, founders, startups and businesses.
+
+They should be able to:
+
+Browse HR professionals without registering.
+Search for relevant expertise.
+Filter professionals by category, price, experience and rating.
+View detailed profiles.
+Compare consultation services.
+Select a consultation.
+Choose an available date and time.
+Register or sign in.
+Complete payment.
+Manage upcoming consultations.
+Communicate necessary consultation details.
+Submit reviews after completed sessions.
+Platform revenue
+HRConnect earns a percentage of successful consultation transactions.
+
+Initial commission structure:
+
+Platform-generated customer booking: 15% platform commission.
+Expert-referred customer booking: 10% platform commission.
+These percentages must be configurable by administrators.
+
+The commission applicable to a booking must be snapshotted at the time of the transaction. Historical bookings must not change when future commission settings are updated.
+
+All financial calculations must happen on the server.
+
+# 2. BRAND AND VISUAL IDENTITY
+Working application name: HRConnect
+
+Keep the brand name configurable so it can be changed later without modifying application logic.
+
+The visual direction must be premium, elegant, trustworthy, modern and welcoming.
+
+The platform should feel like a serious professional marketplace, not a generic HR recruitment portal.
+
+Design system
+Use this visual direction:
+
+Midnight Navy: #101A32
+Royal Blue: #3459D9
+Champagne Gold: #C5A46D
+Warm Off-White: #F8F8F6
+Charcoal: #202638
+Soft neutral grey backgrounds.
+Typography:
+Inter
+Manrope
+Design characteristics:
+
+Elegant typography.
+Generous whitespace.
+Clean layouts.
+Sophisticated cards.
+Subtle shadows.
+Refined borders.
+Rounded corners used consistently.
+Premium buttons and form controls.
+Restrained use of gold.
+Excellent responsive layouts.
+Consistent spacing and visual hierarchy.
+Avoid:
+Generic AI-generated SaaS layouts.
+Excessive gradients.
+Excessive animations.
+Overly colourful dashboards.
+Huge empty hero sections.
+Cluttered interfaces.
+Unnecessary decorative elements.
+Fake statistics and fake testimonials.
+Repeated generic stock illustrations.
+Use authentic-looking professional imagery where appropriate.
+
+Do not use real people's photographs in a way that falsely represents them as actual HRConnect experts.
+
+Create a reusable component system.
+
+The homepage, directory, expert profiles, booking pages and dashboards must all feel like parts of the same premium product.
+
+# 3. TECHNOLOGY ARCHITECTURE
+Build a maintainable full-stack application.
+
+Preferred stack:
+
+Next.js with App Router.
+React.
+TypeScript.
+Tailwind CSS.
+PostgreSQL.
+Prisma ORM.
+Server-side API routes.
+Secure authentication and session management.
+Zod or equivalent server-side validation.
+Lucide icons or an equivalent lightweight icon library.
+If Emergent requires a different supported technology for its managed backend, use the closest stable equivalent while preserving the architecture and all business requirements.
+
+Important architectural requirements:
+
+Use a relational database.
+Do not use localStorage as the primary database.
+Do not implement fake APIs that return hardcoded data.
+All business-critical data must persist in the database.
+Use reusable components.
+Separate business logic from UI components.
+Implement server-side authorization.
+Keep financial calculations server-side.
+Keep secrets in environment variables.
+Provide database migrations and seed scripts.
+Keep the code modular and maintainable.
+Avoid unnecessary microservices.
+Build a modular monolithic architecture for the initial application.
+
+Do not introduce complicated infrastructure that increases hosting and maintenance costs.
+
+# 4. USER ROLES AND ACCESS CONTROL
+Implement three primary roles.
+
+A. CUSTOMER
+Can:
+Browse public expert profiles.
+Search and filter experts.
+Register and sign in.
+Book consultations.
+Make payments.
+View personal bookings.
+Cancel eligible bookings.
+Submit reviews for completed bookings.
+Manage profile details.
+View notifications.
+Customers must never access another customer's private bookings or payments.
+
+B. EXPERT
+Can:
+Apply for expert verification.
+Manage professional profile.
+Add and edit consultation services.
+Set prices.
+Set consultation durations.
+Manage weekly availability.
+Add date-specific availability exceptions.
+View incoming bookings.
+Confirm or cancel eligible consultations.
+View customer consultation details necessary to provide the service.
+Mark eligible sessions completed through an authorized workflow.
+View reviews.
+View earnings and commissions.
+Request payouts.
+Manage notification preferences.
+Experts must not access another expert's bookings, private data or earnings.
+
+An expert must be approved by an administrator before becoming publicly bookable.
+
+Suspended experts must not receive new bookings.
+
+C. ADMIN
+Can:
+View platform analytics.
+Manage customers.
+Review expert applications.
+Approve or reject experts.
+Suspend or reactivate experts.
+Manage specialisations and categories.
+View all bookings.
+Manage cancellations.
+View payments.
+Configure commission rules.
+Review payout requests.
+Manage reviews and reported content.
+Manage platform settings.
+View transaction and audit history.
+ADMIN permissions must only be granted through a secure administrative process.
+
+Never allow public registration to create administrator accounts.
+
+All protected actions must be authorized on the server.
+
+# 5. PUBLIC HOMEPAGE
+Create a premium, conversion-focused homepage.
+
+Navigation
+Include:
+Brand logo and name.
+Explore Experts.
+How It Works.
+Become an HR Expert.
+Sign In.
+Join HRConnect.
+Show account-specific navigation when a user is authenticated.
+
+Hero section
+Suggested headline:
+
+**Your HR Expertise Deserves to Earn More.**
+Suggested supporting text:
+
+Turn your HR knowledge and professional experience into meaningful earning opportunities. Connect with people and businesses looking for expert HR guidance.
+
+Primary CTA:
+
+**Explore HR Experts**
+Secondary CTA:
+
+**Become an HR Expert**
+The messaging must be empowering and credible.
+
+Do not promise guaranteed earnings or guaranteed customers.
+
+Homepage sections
+Hero section.
+How HRConnect works.
+Explore HR expertise categories.
+Featured HR professionals.
+Popular consultation services.
+Benefits for HR professionals.
+Benefits for customers.
+How expert consultations work.
+Trust and verification explanation.
+Frequently asked questions.
+Final registration CTA.
+Footer with legal and support links.
+Do not display fake expert counts, fake earnings, fake customer counts or fake reviews.
+
+Only display real database-backed statistics.
+
+When the platform has no real data, use explanatory content rather than invented numbers.
+
+# 6. EXPERT DISCOVERY MARKETPLACE
+This is one of the most important parts of the application.
+
+Build a searchable expert directory.
+
+Search
+Allow customers to search using:
+
+Expert name.
+HR specialisation.
+Skills.
+Consultation service.
+Keywords.
+Filters
+Include:
+HR specialisation.
+Minimum years of experience.
+Price range.
+Rating.
+Consultation duration.
+Availability.
+Consultation type.
+Filters must work against real database data.
+
+Expert cards
+Display:
+Profile photograph.
+Name.
+Professional headline.
+Experience.
+Specialisation.
+Verified badge.
+Rating and review count, only when available.
+Starting consultation price.
+Short biography.
+View Profile CTA.
+Do not display fabricated ratings.
+
+Include pagination or efficient loading.
+
+# 7. HR EXPERT PROFILE
+Every approved expert should have a public professional profile.
+
+Include:
+Profile photo.
+Full name.
+Professional headline.
+Verification badge.
+Current designation, where provided.
+Professional background.
+Years of experience.
+Specialisations.
+Skills.
+Industry experience.
+About section.
+Consultation services.
+Pricing.
+Service duration.
+Availability.
+Verified customer reviews.
+Allow experts to add an optional short introduction video or sample expertise video.
+
+Use simple video URL or supported media storage integration. Do not build a costly video streaming infrastructure.
+
+Customers should be able to understand an expert's experience before booking.
+
+Include a prominent booking CTA.
+
+# 8. HR EXPERT SPECIALISATIONS
+Create predefined specialisation categories that administrators can manage.
+
+Initial categories:
+
+Talent Acquisition and Recruitment.
+HR Business Partnering.
+Payroll and Compensation.
+Labour Law and Compliance.
+Employee Relations.
+Performance Management.
+Learning and Development.
+HR Operations.
+HR Strategy and Leadership.
+Career Guidance for HR Professionals.
+Resume and LinkedIn Guidance.
+Interview Preparation.
+Startup HR Setup.
+Organisational Development.
+Employee Engagement.
+Allow multiple specialisations per expert.
+
+Do not hardcode the category system in a way that prevents administrators from adding categories later.
+
+# 9. CONSULTATION SERVICES
+Experts must be able to create multiple services.
+
+Each service must include:
+
+Service title.
+Description.
+Specialisation.
+Consultation duration.
+Price in INR.
+Active/inactive status.
+Consultation format.
+Optional preparation instructions.
+Example service types:
+
+30-minute HR career consultation.
+60-minute HR mentoring session.
+Resume review.
+Mock HR interview.
+Recruitment strategy consultation.
+Payroll and compliance guidance.
+HR policy consultation.
+Startup HR advisory.
+HR leadership mentoring.
+Allow configurable durations such as 15, 30, 45, 60 and 90 minutes.
+
+The server must always retrieve the actual service duration and price from the database.
+
+Never trust a price supplied by the browser.
+
+# 10. EXPERT REGISTRATION AND VERIFICATION
+Build a dedicated Become an HR Expert journey.
+
+Registration should collect:
+
+Full name.
+Email.
+Password.
+Phone number.
+Professional headline.
+Current or previous designation.
+Years of experience.
+Current organisation, optional.
+Professional biography.
+Primary specialisation.
+Additional specialisations.
+Professional skills.
+LinkedIn profile URL, optional.
+Profile photo.
+Relevant professional verification information.
+Do not collect unnecessary sensitive information.
+
+Allow applicants to save and complete their profiles.
+
+Application statuses:
+
+PENDING.
+APPROVED.
+REJECTED.
+Admin must review applications before approving public expert visibility and booking eligibility.
+
+Rejected applicants must receive a clear status and, where appropriate, a reason.
+
+Experts must be able to see their application status.
+
+Only approved experts can publish bookable services.
+
+# 11. AVAILABILITY AND BOOKING ENGINE
+Build a complete consultation booking engine.
+
+Expert availability
+Experts must be able to define:
+
+Weekly availability.
+Available weekdays.
+Start time.
+End time.
+Breaks if supported.
+Date-specific exceptions.
+Holidays.
+Unavailable dates.
+Use Asia/Kolkata as the initial default timezone.
+
+Keep timezone configurable for future international expansion.
+
+Booking journey
+Customer opens an expert profile.
+Customer selects a service.
+Customer selects a date.
+Application retrieves available time slots from the backend.
+Customer selects a slot.
+Customer enters the consultation topic or purpose.
+Customer signs in or registers if necessary.
+Backend validates the selected slot.
+Backend temporarily reserves the slot.
+Customer proceeds to payment.
+Prevent:
+Past bookings.
+Double bookings.
+Overlapping consultations.
+Booking inactive services.
+Booking unapproved experts.
+Booking suspended experts.
+Booking one's own service.
+Use database transactions and concurrency-safe slot reservation.
+
+Payment-pending bookings must temporarily reserve their slot.
+
+Initial payment hold duration: 10 minutes.
+
+Expired unpaid bookings must automatically become ineligible for payment and must release their slot.
+
+Availability checks must ignore expired payment holds.
+
+# 12. BOOKING LIFECYCLE
+Use clear booking and payment statuses.
+
+Booking statuses:
+
+PENDING_PAYMENT.
+CONFIRMED.
+COMPLETED.
+CANCELLED.
+REFUNDED.
+Payment statuses:
+
+CREATED.
+PENDING.
+SUCCESS.
+FAILED.
+REFUNDED.
+Only verified successful payments can cause a booking to become CONFIRMED.
+
+A failed payment must not create a confirmed booking.
+
+Only authorized participants or administrators can cancel eligible bookings.
+
+Completed bookings cannot be cancelled.
+
+Cancellation reasons and timestamps must be stored.
+
+Do not automatically claim that a customer has received a refund.
+
+Actual refunds must be recorded only after a genuine refund has been processed.
+
+Cancellation rules should be configurable by the administrator.
+
+# 13. PAYMENT GATEWAY — RAZORPAY
+India is the initial target market.
+
+Integrate Razorpay for real payment processing.
+
+Use Razorpay Test Mode during development.
+
+Support:
+UPI.
+Cards.
+Net banking.
+Other payment methods enabled in the Razorpay account.
+Payment flow
+Customer creates a booking request.
+Backend validates the booking.
+Backend calculates the price and commission.
+Backend creates a payment-pending booking.
+Backend creates a Razorpay order.
+Customer completes Razorpay Checkout.
+Browser submits payment response.
+Backend verifies payment signature.
+Backend verifies order, amount and currency.
+Backend records successful payment.
+Booking becomes CONFIRMED.
+Notifications are created for customer and expert.
+Implement a Razorpay webhook endpoint.
+
+Support relevant events including:
+
+payment.captured.
+payment.failed.
+order.paid, where appropriate to the selected flow.
+Verify webhook signatures using the raw request body.
+
+Implement idempotency so duplicate callbacks and webhook deliveries cannot create duplicate financial records.
+
+Never trust a browser redirect as proof of payment.
+
+Never expose Razorpay secret keys to the browser.
+
+Store payment amounts as integer paise.
+
+Currency: INR.
+Use environment variables for all credentials.
+
+Provide clear instructions for configuring Razorpay Test Mode.
+
+Do not hardcode credentials.
+
+# 14. COMMISSION AND FINANCIAL MANAGEMENT
+Implement the commission engine.
+
+Initial rules:
+
+Platform-generated customer: 15%.
+Expert-referred customer: 10%.
+Example:
+If consultation price = ₹1,000:
+
+Platform-generated booking:
+
+Customer pays ₹1,000.
+Platform commission = ₹150.
+Expert earning = ₹850.
+Expert-referred booking:
+
+Customer pays ₹1,000.
+Platform commission = ₹100.
+Expert earning = ₹900.
+These values are illustrative.
+
+The platform must calculate all amounts on the server.
+
+The commission rate and amount must be snapshotted for every successful transaction.
+
+Referral attribution must be verifiable.
+
+Do not allow customers or experts to change referral attribution after booking creation.
+
+Maintain a financial ledger with distinct records for:
+
+Successful customer payments.
+Platform commission.
+Expert earnings.
+Cancellation adjustments.
+Refunds, when actually processed.
+Payouts, when actually processed.
+Never count failed or pending payments as platform revenue.
+
+Never create a fake wallet balance.
+
+# 15. EXPERT EARNINGS AND PAYOUT MANAGEMENT
+Experts need an earnings dashboard.
+
+Show:
+Total successful consultation revenue.
+Platform commission deducted.
+Net expert earnings.
+Pending earnings.
+Available payout balance.
+Completed consultations.
+Payout history.
+Build payout request functionality.
+
+An expert can request withdrawal of eligible available earnings.
+
+Admin can:
+
+View payout requests.
+Approve or reject requests.
+Record payout reference.
+Mark payouts as paid only after actual payment.
+Maintain payout audit history.
+For the initial MVP, implement a secure manual payout workflow.
+
+Do not pretend that money was automatically transferred.
+
+Keep the payout architecture extensible for a future Razorpay Route or other approved marketplace payout integration.
+
+Do not enable automated transfers unless the provider account and compliance requirements support them.
+
+# 16. VIDEO CONSULTATION EXPERIENCE
+HRConnect is a consultation marketplace, not an online course platform.
+
+Customers must be able to attend their booked consultations.
+
+For the initial MVP:
+
+Store consultation meeting URL.
+Allow the expert or admin to add the meeting link.
+Show the meeting link only to authorized booking participants.
+Display it on the booking detail page.
+Show the consultation date and time clearly.
+Display preparation instructions where provided.
+Do not build a custom video-conferencing service.
+
+Do not introduce expensive real-time infrastructure unnecessarily.
+
+Keep the meeting provider integration replaceable for future development.
+
+# 17. CUSTOMER DASHBOARD
+Create a premium customer dashboard.
+
+Include:
+Overview
+Upcoming consultations.
+Past consultations.
+Pending payments.
+Recent notifications.
+My Bookings
+Expert information.
+Service.
+Date and time.
+Booking status.
+Payment status.
+Meeting link when available.
+Cancellation option where eligible.
+Review option after completion.
+Payments
+Transaction history.
+Payment amount.
+Payment date.
+Payment status.
+Booking reference.
+Saved Experts
+Allow customers to bookmark experts.
+
+Profile
+Name.
+Email.
+Phone.
+Profile information.
+All data must belong to the authenticated customer.
+
+# 18. EXPERT DASHBOARD
+Create a professional expert dashboard.
+
+Overview
+Display:
+Total bookings.
+Upcoming consultations.
+Completed consultations.
+Total gross consultation revenue.
+Platform commission.
+Net earnings.
+Available payout amount.
+Average rating.
+Only calculate financial metrics from real verified transactions.
+
+My Profile
+Allow experts to manage their public profile.
+
+My Services
+Allow experts to:
+
+Add services.
+Edit services.
+Change pricing.
+Change duration.
+Activate/deactivate services.
+Availability
+Weekly schedule and date-specific exceptions.
+
+Bookings
+Display:
+Customer name.
+Service.
+Date and time.
+Consultation topic.
+Booking status.
+Payment status.
+Meeting URL.
+Earnings
+Show a transparent breakdown of gross payments, commission, net earnings and payout history.
+
+Reviews
+Display real customer reviews.
+
+Notifications
+Display relevant booking and account notifications.
+
+# 19. ADMIN DASHBOARD
+Build a fully functional administration area.
+
+Overview
+Show real database-backed metrics:
+
+Total registered customers.
+Total approved experts.
+Pending expert applications.
+Total bookings.
+Confirmed bookings.
+Completed bookings.
+Cancelled bookings.
+Successful payment volume.
+Platform commission earned.
+Pending payout requests.
+Do not include failed or pending payments in successful revenue.
+
+Expert management
+Search experts.
+View profiles.
+Approve applications.
+Reject applications.
+Suspend accounts.
+Reactivate accounts.
+View services and booking history.
+Customer management
+Search customers.
+View profiles.
+View bookings.
+Suspend accounts when necessary.
+Booking management
+Search bookings.
+Filter by status.
+View booking details.
+Manage exceptional cases.
+View cancellation history.
+Payment management
+Search transactions.
+View payment status.
+View Razorpay references.
+View commission breakdown.
+Filter by date and status.
+Commission configuration
+Allow authorized administrators to configure:
+
+Platform-generated booking commission.
+Expert-referred booking commission.
+New settings must not alter historical transaction snapshots.
+
+Payout management
+Review and manage payout requests.
+
+Review moderation
+Allow administrators to review reported or inappropriate reviews.
+
+Do not allow administrators to fabricate customer reviews.
+
+Category management
+Create, edit, deactivate and reorder specialisations.
+
+Audit log
+Record important administrative actions.
+
+# 20. REVIEWS AND TRUST
+Implement a verified review system.
+
+Rules:
+Only customers with completed bookings can review.
+One review per booking.
+Rating must be between 1 and 5.
+Written feedback is optional.
+Experts cannot review themselves.
+Reviews must be associated with real bookings.
+Prevent duplicate reviews.
+Display:
+Average rating.
+Total number of verified reviews.
+Rating distribution.
+Review date.
+Customer feedback.
+Allow users to report inappropriate content.
+
+Provide basic admin moderation.
+
+Do not generate fake reviews or sample customer testimonials.
+
+# 21. NOTIFICATION SYSTEM
+Implement persistent in-app notifications.
+
+Events should include:
+
+New booking.
+Payment successful.
+Payment failed.
+Booking confirmed.
+Booking cancelled.
+Consultation reminder.
+Consultation completed.
+New review.
+Expert application approved.
+Expert application rejected.
+Payout request updated.
+Each notification should support:
+
+User ownership.
+Title.
+Message.
+Event type.
+Read/unread status.
+Created timestamp.
+Optional related booking.
+Add an unread notification badge in the navigation.
+
+Implement notification preferences where practical.
+
+Prepare email integration using a replaceable service interface.
+
+Do not require paid email infrastructure for the application to work locally.
+
+# 22. SEARCH, SEO AND CONTENT
+
+Implement:
+SEO-friendly expert profile URLs.
+Search engine metadata.
+Descriptive page titles.
+Meta descriptions.
+Open Graph metadata.
+Sitemap.
+Robots configuration.
+Responsive public pages.
+Public expert profiles should be discoverable by search engines.
+
+Private dashboards, account pages and payment information must not be publicly indexed.
+
+Use clean URLs.
+
+# 23. LEGAL, PRIVACY AND PLATFORM POLICIES
+Create editable legal pages:
+
+Terms and Conditions.
+Privacy Policy.
+Cancellation Policy.
+Refund Policy.
+Expert Agreement.
+Community Guidelines.
+Use clear placeholder language where professional legal review is required.
+
+Do not claim that the platform is legally compliant merely because these pages exist.
+
+Include a warning that experts must not share confidential employer information, candidate records or other third-party private information during consultations.
+
+Collect only necessary user information.
+
+Use secure authentication, password hashing and protected sessions.
+
+# 24. DATABASE REQUIREMENTS
+Design a proper relational database.
+
+Include appropriate entities for:
+
+Users.
+Customer profiles.
+Expert profiles.
+Expert applications.
+Specialisations.
+Expert specialisations.
+Services.
+Availability rules.
+Availability exceptions.
+Bookings.
+Payments.
+Payment events.
+Commission rules.
+Transaction ledger.
+Payout requests.
+Payout records.
+Reviews.
+Saved experts.
+Notifications.
+Notification preferences.
+Administrative audit logs.
+Platform settings.
+Use correct foreign keys, indexes, unique constraints and timestamps.
+
+Prevent duplicate bookings and duplicate payment processing.
+
+Use transactions for critical multi-step operations.
+
+Use integer paise for financial data.
+
+Store timestamps consistently in UTC and convert to the appropriate user timezone for display.
+
+Do not reset the database during ordinary development.
+
+# 25. SECURITY AND RELIABILITY
+This application handles personal information and money.
+
+Security must be treated as a core requirement.
+
+Implement:
+Secure authentication.
+- Password hashing.
+
+Role-based access control.
+Server-side ownership checks.
+Request validation.
+Rate limiting.
+CSRF protections where applicable.
+Secure HTTP-only cookies.
+Protection against unauthorized object access.
+Payment signature verification.
+Webhook signature verification.
+Idempotent financial processing.
+Safe error handling.
+Environment-variable secrets.
+Audit logging for important operations.
+Never expose:
+
+- Password hashes.
+
+Payment secrets.
+Private customer information.
+Private consultation meeting links to unauthorized users.
+Internal administrative data.
+Do not rely on frontend visibility as an authorization mechanism.
+
+# 26. USER EXPERIENCE AND RESPONSIVENESS
+The application must work properly on:
+
+Desktop.
+Laptop.
+Tablet.
+Mobile phones.
+Implement:
+Responsive navigation.
+Mobile-friendly dashboards.
+Consistent forms.
+Form validation.
+Loading indicators.
+Empty states.
+Error states.
+Success feedback.
+Confirmation dialogs.
+Accessible labels.
+Keyboard-friendly interactions.
+All buttons and controls must perform real actions.
+
+Do not leave decorative buttons that do nothing.
+
+Do not create static dashboard numbers.
+
+Do not use hardcoded arrays as substitutes for database records.
+
+# 27. INITIAL DEMO DATA
+Create a development seed script.
+
+Seed:
+Specialisation categories.
+A small number of clearly labelled demo HR experts.
+Example consultation services.
+Availability rules.
+Example service pricing in INR.
+Demo experts must be visibly identified as demo data in development.
+
+Do not create fake successful payments, fake customer reviews or fake real-world activity.
+
+Create a secure way to configure the first admin account through environment variables or a protected seed process.
+
+Never expose admin credentials in frontend code.
+
+# 28. TESTING AND QUALITY ASSURANCE
+Implement tests for critical business workflows.
+
+At minimum verify:
+
+Authentication:
+Registration.
+Login.
+Logout.
+Invalid credentials.
+Role restrictions.
+Expert verification:
+
+Application submission.
+Pending status.
+Admin approval.
+Admin rejection.
+Suspended expert restrictions.
+Services:
+Service creation.
+Service updates.
+Invalid pricing.
+Inactive service restrictions.
+Bookings:
+Customer booking.
+Unauthenticated booking rejection.
+Expert booking restriction.
+Own-service booking rejection.
+Availability validation.
+Overlapping booking prevention.
+Concurrent booking protection.
+Expired payment holds.
+Payments:
+Razorpay order creation.
+Signature verification.
+Wrong amount rejection.
+Wrong currency rejection.
+Duplicate webhook handling.
+Payment failure.
+Successful payment confirmation.
+Financial management:
+
+Correct commission calculation.
+Expert net earnings.
+No duplicate ledger entries.
+Pending and failed payments excluded from revenue.
+Reviews:
+Completed booking review.
+Duplicate review rejection.
+Invalid rating rejection.
+Authorization:
+Customers cannot access another customer's records.
+Experts cannot access another expert's records.
+Non-admin users cannot access admin APIs.
+Run the available automated tests and report actual results.
+
+# 29. CREDIT AND IMPLEMENTATION DISCIPLINE — VERY IMPORTANT
+I have a limited Emergent.sh budget of approximately 180 credits.
+
+Do not waste credits on repeated redesigns, unnecessary explanations, excessive planning cycles or rebuilding completed work.
+
+Follow these rules:
+
+Treat this prompt as the complete product specification.
+Inspect the available platform capabilities first.
+Choose the simplest stable architecture supported by Emergent.
+Plan the application internally before generating the code.
+Build the complete application in a coordinated implementation.
+Reuse components and patterns rather than repeatedly recreating them.
+Avoid unnecessary dependencies.
+Avoid unnecessary third-party integrations.
+Do not create multiple alternative implementations.
+Do not stop after building the homepage.
+Do not deliver only a frontend prototype.
+Do not repeatedly ask me to approve obvious implementation decisions.
+Do not spend credits on features that do not support the core marketplace.
+Prioritise working business functionality over decorative details.
+Fix errors before claiming completion.
+If an external provider requires credentials that I have not supplied, build the correct integration, provide environment-variable placeholders and implement a clearly labelled development/test mode.
+
+Do not simulate real payment success.
+
+If a feature cannot be completed within the available platform capabilities, clearly identify it rather than creating a fake implementation.
+
+# 30. IMPLEMENTATION PRIORITIES
+Build in this order, while keeping the application architecture consistent.
+
+**Priority 1 — Core foundation**
+Database.
+Authentication.
+User roles.
+Expert applications.
+Admin access.
+**Priority 2 — Marketplace**
+Public homepage.
+Expert directory.
+Search and filters.
+Expert profiles.
+Specialisations.
+Consultation services.
+**Priority 3 — Booking**
+Availability.
+Slot reservation.
+Booking creation.
+Booking management.
+Cancellation.
+**Priority 4 — Monetisation**
+Razorpay.
+Payment verification.
+Webhooks.
+Commission engine.
+Transaction ledger.
+Expert earnings.
+**Priority 5 — Operations**
+Customer dashboard.
+Expert dashboard.
+Admin dashboard.
+Reviews.
+Notifications.
+Payout requests.
+**Priority 6 — Finalisation**
+Responsive design.
+SEO.
+Security.
+Testing.
+Documentation.
+Deployment configuration.
+# 31. FINAL ACCEPTANCE CRITERIA
+The project is not complete merely because the pages look good.
+
+A successful application must allow this complete journey:
+
+Expert journey
+HR professional visits HRConnect.
+Clicks Become an HR Expert.
+Registers.
+Submits professional information.
+Application enters PENDING status.
+Administrator reviews the application.
+Administrator approves the expert.
+Expert creates consultation services.
+Expert sets pricing and availability.
+Expert becomes visible in the public directory.
+Expert receives a customer booking.
+Expert conducts the consultation.
+Expert marks the consultation completed through an authorized process.
+Expert receives a verified customer review.
+Expert sees earnings and commission breakdown.
+Expert can request a payout.
+Customer journey
+Customer visits HRConnect.
+Browses experts without signing in.
+Searches for a particular HR skill.
+Opens an expert profile.
+Reviews services, pricing and experience.
+Selects a consultation.
+Selects an available slot.
+Registers or signs in.
+Proceeds to Razorpay checkout.
+Completes payment.
+Backend verifies payment.
+Booking becomes CONFIRMED.
+Customer receives a notification.
+Customer accesses the consultation meeting link.
+Consultation takes place.
+Customer receives an opportunity to submit a review.
+Admin journey
+Administrator signs in securely.
+Views platform dashboard.
+Reviews expert applications.
+Approves or rejects experts.
+Manages customers and experts.
+Reviews bookings.
+Views successful payments.
+Tracks platform commissions.
+Reviews payout requests.
+Manages platform settings.
+Final delivery
+Deliver:
+Complete working application.
+Responsive frontend.
+Functional backend.
+Database schema and migrations.
+Authentication and authorization.
+Real CRUD operations.
+Working marketplace.
+Booking engine.
+Razorpay Test Mode integration.
+Financial ledger.
+Admin dashboard.
+Customer dashboard.
+Expert dashboard.
+Reviews.
+Notifications.
+Payout request workflow.
+Seed data.
+Environment variable template.
+Setup instructions.
+Deployment instructions.
+Known limitations.
+**Final instruction: Build HRConnect as a cohesive, functional HR professional income marketplace. Every major user journey must work end to end. Do not substitute attractive screens for working functionality. Keep the product focused on helping HR professionals monetise their expertise while giving customers a reliable way to discover and book qualified HR professionals.*

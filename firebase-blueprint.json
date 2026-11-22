@@ -1,0 +1,614 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Core non-PII user account record, verified Google identity, and role metadata.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "verifiedGoogleEmail": { "type": "string" },
+        "emailVerified": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["CUSTOMER", "EXPERT"] },
+        "accountStatus": { "type": "string", "enum": ["ACTIVE", "SUSPENDED"] },
+        "savedExpertIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["userId", "displayName", "role", "accountStatus", "savedExpertIds", "createdAt", "updatedAt"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Strictly isolated PII and notification preferences for a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "city": { "type": "string" },
+        "notifyBookings": { "type": "boolean" },
+        "notifyPayments": { "type": "boolean" },
+        "notifyReviews": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "FieldValue.serverTimestamp()" }
+      },
+      "required": ["userId", "email", "phone", "city", "notifyBookings", "notifyPayments", "notifyReviews", "updatedAt"]
+    },
+    "EmailAuditLog": {
+      "title": "EmailAuditLog",
+      "description": "Immutable audit record whenever a user updates their contact email.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "previousEmail": { "type": "string" },
+        "newContactEmail": { "type": "string" },
+        "verifiedGoogleEmail": { "type": "string" },
+        "reverificationRequired": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "previousEmail", "newContactEmail", "verifiedGoogleEmail", "reverificationRequired", "createdAt"]
+    },
+    "Specialisation": {
+      "title": "Specialisation",
+      "description": "HR expertise category managed by administrators.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "description", "sortOrder", "active", "createdAt", "updatedAt"]
+    },
+    "ExpertProfile": {
+      "title": "ExpertProfile",
+      "description": "Public HR expert profile, verified Google Workspace identity for Meet invites, and verification application record.",
+      "type": "object",
+      "properties": {
+        "expertUid": { "type": "string" },
+        "fullName": { "type": "string" },
+        "verifiedGoogleEmail": { "type": "string" },
+        "googleEmailVerified": { "type": "boolean" },
+        "headline": { "type": "string" },
+        "designation": { "type": "string" },
+        "organization": { "type": "string" },
+        "yearsExperience": { "type": "integer" },
+        "bio": { "type": "string" },
+        "primarySpecialisation": { "type": "string" },
+        "specialisations": { "type": "array" },
+        "skills": { "type": "array" },
+        "industryExperience": { "type": "string" },
+        "linkedInUrl": { "type": "string" },
+        "introVideoUrl": { "type": "string" },
+        "verificationNotes": { "type": "string" },
+        "verificationStatus": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "rejectionReason": { "type": "string" },
+        "accountStatus": { "type": "string", "enum": ["ACTIVE", "SUSPENDED"] },
+        "demoProfile": { "type": "boolean" },
+        "startingPriceInr": { "type": "integer" },
+        "referralCode": { "type": "string" },
+        "timezone": { "type": "string" },
+        "payoutAccountType": { "type": "string", "enum": ["UPI", "BANK_ACCOUNT"] },
+        "payoutDestinationMasked": { "type": "string" },
+        "payoutKycStatus": { "type": "string" },
+        "razorpayContactId": { "type": "string" },
+        "razorpayFundAccountId": { "type": "string" },
+        "razorpayLinkedAccountId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "expertUid", "fullName", "headline", "designation", "yearsExperience",
+        "bio", "primarySpecialisation", "specialisations", "skills",
+        "verificationStatus", "accountStatus", "demoProfile", "startingPriceInr",
+        "referralCode", "timezone", "createdAt", "updatedAt"
+      ]
+    },
+    "ConsultationService": {
+      "title": "ConsultationService",
+      "description": "Paid consultation service published by an approved HR expert.",
+      "type": "object",
+      "properties": {
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "expertName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "specialisation": { "type": "string" },
+        "durationMinutes": { "type": "integer" },
+        "priceInr": { "type": "integer" },
+        "pricePaise": { "type": "integer" },
+        "consultationFormat": { "type": "string" },
+        "preparationInstructions": { "type": "string" },
+        "active": { "type": "boolean" },
+        "demoService": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "expertId", "expertUid", "expertName", "title", "description",
+        "specialisation", "durationMinutes", "priceInr", "pricePaise",
+        "consultationFormat", "active", "demoService", "createdAt", "updatedAt"
+      ]
+    },
+    "AvailabilityRule": {
+      "title": "AvailabilityRule",
+      "description": "Weekly recurring availability rule per expert and weekday.",
+      "type": "object",
+      "properties": {
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "dayOfWeek": { "type": "integer" },
+        "enabled": { "type": "boolean" },
+        "startMinute": { "type": "integer" },
+        "endMinute": { "type": "integer" },
+        "breakStartMinute": { "type": "integer" },
+        "breakEndMinute": { "type": "integer" },
+        "timezone": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "expertId", "expertUid", "dayOfWeek", "enabled",
+        "startMinute", "endMinute", "breakStartMinute", "breakEndMinute",
+        "timezone", "updatedAt"
+      ]
+    },
+    "AvailabilityException": {
+      "title": "AvailabilityException",
+      "description": "Date-specific holiday or blocked availability exception.",
+      "type": "object",
+      "properties": {
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "dateIso": { "type": "string" },
+        "unavailable": { "type": "boolean" },
+        "reason": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["expertId", "expertUid", "dateIso", "unavailable", "reason", "updatedAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Consultation booking with server-validated price, snapshotted commission/fees, Calendar/Meet sync, attendance, dual completion, and dispute/payout state.",
+      "type": "object",
+      "properties": {
+        "customerUid": { "type": "string" },
+        "customerName": { "type": "string" },
+        "verifiedCustomerGoogleEmail": { "type": "string" },
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "expertName": { "type": "string" },
+        "verifiedExpertGoogleEmail": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "serviceTitle": { "type": "string" },
+        "durationMinutes": { "type": "integer" },
+        "dateIso": { "type": "string" },
+        "startMinute": { "type": "integer" },
+        "endMinute": { "type": "integer" },
+        "slotKey": { "type": "string" },
+        "timezone": { "type": "string" },
+        "topic": { "type": "string" },
+        "preparationInstructions": { "type": "string" },
+        "referralType": { "type": "string", "enum": ["PLATFORM", "EXPERT_REFERRAL"] },
+        "referralCode": { "type": "string" },
+        "amountPaise": { "type": "integer" },
+        "commissionRateBps": { "type": "integer" },
+        "commissionPaise": { "type": "integer" },
+        "gatewayFeePaise": { "type": "integer" },
+        "taxDeductionPaise": { "type": "integer" },
+        "expertEarningPaise": { "type": "integer" },
+        "refundedAmountPaise": { "type": "integer" },
+        "bookingStatus": {
+          "type": "string",
+          "enum": ["PENDING_PAYMENT", "CONFIRMED", "SCHEDULED", "IN_PROGRESS", "ATTENDANCE_PENDING", "COMPLETION_PENDING", "COMPLETED", "CANCELLED", "DISPUTED", "REFUNDED"]
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["CREATED", "PENDING", "SUCCESS", "FAILED", "REFUND_PENDING", "PARTIALLY_REFUNDED", "REFUNDED"]
+        },
+        "providerSettlementStatus": { "type": "string" },
+        "attendanceStatus": { "type": "string" },
+        "attendanceVerificationSource": { "type": "string" },
+        "payoutEligibilityStatus": { "type": "string" },
+        "disputeStatus": { "type": "string" },
+        "calendarSyncStatus": { "type": "string" },
+        "holdExpiresAtEpochMs": { "type": "integer" },
+        "meetingUrl": { "type": "string" },
+        "googleCalendarEventId": { "type": "string" },
+        "googleMeetSpaceId": { "type": "string" },
+        "googleMeetCode": { "type": "string" },
+        "conferenceRequestId": { "type": "string" },
+        "meetingAccessMode": { "type": "string" },
+        "checkInPin": { "type": "string" },
+        "customerCheckInAtMs": { "type": "integer" },
+        "expertCheckInAtMs": { "type": "integer" },
+        "customerJoinedMinutes": { "type": "integer" },
+        "expertJoinedMinutes": { "type": "integer" },
+        "overlapMinutes": { "type": "integer" },
+        "attendanceNotes": { "type": "string" },
+        "customerCompletedConfirmed": { "type": "boolean" },
+        "expertCompletedConfirmed": { "type": "boolean" },
+        "completedAtEpochMs": { "type": "integer" },
+        "disputeWindowEndsAtEpochMs": { "type": "integer" },
+        "disputeReason": { "type": "string" },
+        "disputeResolution": { "type": "string" },
+        "cancellationReason": { "type": "string" },
+        "cancelledByUid": { "type": "string" },
+        "rescheduleCount": { "type": "integer" },
+        "rescheduledAtEpochMs": { "type": "integer" },
+        "reviewed": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "customerUid", "customerName", "expertId", "expertUid", "expertName",
+        "serviceId", "serviceTitle", "durationMinutes", "dateIso", "startMinute",
+        "endMinute", "slotKey", "timezone", "topic", "referralType",
+        "amountPaise", "commissionRateBps", "commissionPaise", "expertEarningPaise",
+        "bookingStatus", "paymentStatus", "holdExpiresAtEpochMs", "reviewed",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "SlotLock": {
+      "title": "SlotLock",
+      "description": "Concurrency-safe slot reservation lock containing no PII.",
+      "type": "object",
+      "properties": {
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "holderUid": { "type": "string" },
+        "bookingId": { "type": "string" },
+        "dateIso": { "type": "string" },
+        "startMinute": { "type": "integer" },
+        "endMinute": { "type": "integer" },
+        "bookingStatus": { "type": "string" },
+        "holdExpiresAtEpochMs": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "expertId", "expertUid", "holderUid", "bookingId", "dateIso",
+        "startMinute", "endMinute", "bookingStatus", "holdExpiresAtEpochMs", "updatedAt"
+      ]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "Razorpay payment record and signature/webhook verification state in integer paise.",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "razorpayOrderId": { "type": "string" },
+        "razorpayPaymentId": { "type": "string" },
+        "razorpaySignature": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "currency": { "type": "string", "enum": ["INR"] },
+        "amountPaise": { "type": "integer" },
+        "commissionPaise": { "type": "integer" },
+        "gatewayFeePaise": { "type": "integer" },
+        "taxDeductionPaise": { "type": "integer" },
+        "expertEarningPaise": { "type": "integer" },
+        "refundedAmountPaise": { "type": "integer" },
+        "paymentStatus": { "type": "string" },
+        "providerSettlementStatus": { "type": "string" },
+        "serverVerified": { "type": "boolean" },
+        "webhookEventId": { "type": "string" },
+        "idempotencyKey": { "type": "string" },
+        "testMode": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "bookingId", "customerUid", "expertUid", "razorpayOrderId",
+        "paymentMethod", "currency", "amountPaise", "commissionPaise",
+        "expertEarningPaise", "paymentStatus", "idempotencyKey", "testMode",
+        "createdAt", "updatedAt"
+      ]
+    },
+    "LedgerEntry": {
+      "title": "LedgerEntry",
+      "description": "Immutable financial ledger record in integer paise.",
+      "type": "object",
+      "properties": {
+        "entryType": { "type": "string" },
+        "direction": { "type": "string", "enum": ["CREDIT", "DEBIT"] },
+        "entryStatus": { "type": "string", "enum": ["PENDING", "SETTLED", "REVERSED", "FAILED"] },
+        "bookingId": { "type": "string" },
+        "paymentId": { "type": "string" },
+        "payoutRequestId": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "amountPaise": { "type": "integer" },
+        "currency": { "type": "string", "enum": ["INR"] },
+        "idempotencyKey": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["entryType", "customerUid", "expertUid", "amountPaise", "currency", "description", "createdAt"]
+    },
+    "AttendanceRecord": {
+      "title": "AttendanceRecord",
+      "description": "Google Meet REST API conference attendance verification or admin manual override record.",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "expectedCustomerEmail": { "type": "string" },
+        "expectedExpertEmail": { "type": "string" },
+        "conferenceRecordId": { "type": "string" },
+        "googleMeetSpaceId": { "type": "string" },
+        "verificationSource": { "type": "string" },
+        "attendanceStatus": { "type": "string" },
+        "customerJoinedAtEpochMs": { "type": "integer" },
+        "customerLeftAtEpochMs": { "type": "integer" },
+        "customerDurationMinutes": { "type": "integer" },
+        "expertJoinedAtEpochMs": { "type": "integer" },
+        "expertLeftAtEpochMs": { "type": "integer" },
+        "expertDurationMinutes": { "type": "integer" },
+        "overlapMinutes": { "type": "integer" },
+        "minimumRequiredMinutes": { "type": "integer" },
+        "unmatchedParticipantDetails": { "type": "string" },
+        "evaluatorSummary": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookingId", "customerUid", "expertUid", "verificationSource", "attendanceStatus", "updatedAt"]
+    },
+    "DisputeRecord": {
+      "title": "DisputeRecord",
+      "description": "Consultation dispute and refund resolution record.",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "raisedByUid": { "type": "string" },
+        "reason": { "type": "string" },
+        "evidenceSummary": { "type": "string" },
+        "status": { "type": "string" },
+        "requestedRefundPaise": { "type": "integer" },
+        "approvedRefundPaise": { "type": "integer" },
+        "resolutionNote": { "type": "string" },
+        "resolvedByUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookingId", "customerUid", "expertUid", "raisedByUid", "reason", "status", "createdAt", "updatedAt"]
+    },
+    "PayoutRequest": {
+      "title": "PayoutRequest",
+      "description": "Expert withdrawal request linked to eligible booking IDs with idempotency and failure retry tracking.",
+      "type": "object",
+      "properties": {
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "expertName": { "type": "string" },
+        "amountPaise": { "type": "integer" },
+        "payoutDestination": { "type": "string" },
+        "eligibleBookingIds": { "type": "array" },
+        "idempotencyKey": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "PROCESSING", "PAID", "FAILED", "REJECTED"] },
+        "payoutReference": { "type": "string" },
+        "providerTransferId": { "type": "string" },
+        "failureReason": { "type": "string" },
+        "retryCount": { "type": "integer" },
+        "adminNote": { "type": "string" },
+        "processedByUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "expertId", "expertUid", "expertName", "amountPaise",
+        "payoutDestination", "status", "createdAt", "updatedAt"
+      ]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Verified customer review tied 1:1 to a completed booking.",
+      "type": "object",
+      "properties": {
+        "bookingId": { "type": "string" },
+        "expertId": { "type": "string" },
+        "expertUid": { "type": "string" },
+        "customerUid": { "type": "string" },
+        "customerName": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" },
+        "reported": { "type": "boolean" },
+        "reportReason": { "type": "string" },
+        "moderationStatus": { "type": "string", "enum": ["VISIBLE", "HIDDEN"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "bookingId", "expertId", "expertUid", "customerUid", "customerName",
+        "rating", "comment", "reported", "moderationStatus", "createdAt", "updatedAt"
+      ]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "Persistent in-app notification scoped to recipientUid.",
+      "type": "object",
+      "properties": {
+        "recipientUid": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "eventType": { "type": "string" },
+        "relatedBookingId": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["recipientUid", "title", "message", "eventType", "read", "createdAt"]
+    },
+    "PlatformSettings": {
+      "title": "PlatformSettings",
+      "description": "Admin-configurable platform commission, gateway fee, tax, dispute window, attendance policy, and marketplace settings.",
+      "type": "object",
+      "properties": {
+        "brandName": { "type": "string" },
+        "platformCommissionBps": { "type": "integer" },
+        "referralCommissionBps": { "type": "integer" },
+        "gatewayFeeBps": { "type": "integer" },
+        "gstOnCommissionBps": { "type": "integer" },
+        "tdsBps": { "type": "integer" },
+        "paymentHoldMinutes": { "type": "integer" },
+        "cancellationWindowHours": { "type": "integer" },
+        "disputeWindowHours": { "type": "integer" },
+        "minMeetAttendanceMinutes": { "type": "integer" },
+        "minMeetAttendanceRatioBps": { "type": "integer" },
+        "defaultTimezone": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "brandName", "platformCommissionBps", "referralCommissionBps",
+        "paymentHoldMinutes", "cancellationWindowHours", "defaultTimezone", "updatedAt"
+      ]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable administrative audit trail.",
+      "type": "object",
+      "properties": {
+        "actorUid": { "type": "string" },
+        "actorEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "targetType": { "type": "string" },
+        "targetId": { "type": "string" },
+        "details": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorUid", "actorEmail", "action", "targetType", "targetId", "details", "createdAt"]
+    },
+    "WebhookEvent": {
+      "title": "WebhookEvent",
+      "description": "Server-only Razorpay / Google webhook idempotency store.",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "eventType": { "type": "string" },
+        "processedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eventId", "eventType", "processedAt"]
+    },
+    "FcmToken": {
+      "title": "FcmToken",
+      "description": "FCM push registration token owned by a user for real-time notifications.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "token": { "type": "string" },
+        "platform": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "token", "platform", "deviceId", "enabled", "updatedAt"]
+    },
+    "ExpertPayoutSecret": {
+      "title": "ExpertPayoutSecret",
+      "description": "Backend-only restricted payout VPA/bank metadata linked to RazorpayX.",
+      "type": "object",
+      "properties": {
+        "expertUid": { "type": "string" },
+        "payoutAccountType": { "type": "string" },
+        "payoutDestinationMasked": { "type": "string" },
+        "razorpayContactId": { "type": "string" },
+        "razorpayFundAccountId": { "type": "string" },
+        "payoutKycStatus": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["expertUid", "payoutAccountType", "payoutDestinationMasked", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "User role, verified Google email, and saved experts list."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Private PII and notification preferences."
+    },
+    "/users/{userId}/fcm_tokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/FcmToken" },
+      "description": "FCM push registration tokens owned by the user."
+    },
+    "/email_audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/EmailAuditLog" },
+      "description": "Immutable email change audit records."
+    },
+    "/specialisations/{specId}": {
+      "schema": { "$ref": "#/entities/Specialisation" },
+      "description": "HR specialisation categories."
+    },
+    "/experts/{expertId}": {
+      "schema": { "$ref": "#/entities/ExpertProfile" },
+      "description": "HR expert public profiles and verification applications."
+    },
+    "/experts/{expertId}/payout_secrets/{docId}": {
+      "schema": { "$ref": "#/entities/ExpertPayoutSecret" },
+      "description": "Server-only restricted expert bank/UPI payout secrets."
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/ConsultationService" },
+      "description": "Consultation services offered by approved experts."
+    },
+    "/availability_rules/{ruleId}": {
+      "schema": { "$ref": "#/entities/AvailabilityRule" },
+      "description": "Weekly availability schedule per expert."
+    },
+    "/availability_exceptions/{exceptionId}": {
+      "schema": { "$ref": "#/entities/AvailabilityException" },
+      "description": "Date-specific unavailability exceptions."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Consultation bookings."
+    },
+    "/slot_locks/{lockKey}": {
+      "schema": { "$ref": "#/entities/SlotLock" },
+      "description": "Atomic slot lock documents."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentRecord" },
+      "description": "Razorpay payment transaction records."
+    },
+    "/ledger_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/LedgerEntry" },
+      "description": "Immutable financial ledger entries."
+    },
+    "/attendance_records/{recordId}": {
+      "schema": { "$ref": "#/entities/AttendanceRecord" },
+      "description": "Google Meet / Admin attendance verification records."
+    },
+    "/disputes/{disputeId}": {
+      "schema": { "$ref": "#/entities/DisputeRecord" },
+      "description": "Consultation disputes and refund decisions."
+    },
+    "/payout_requests/{payoutId}": {
+      "schema": { "$ref": "#/entities/PayoutRequest" },
+      "description": "Expert payout withdrawal requests."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Verified booking reviews."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AppNotification" },
+      "description": "User-scoped in-app notifications."
+    },
+    "/platform_settings/{docId}": {
+      "schema": { "$ref": "#/entities/PlatformSettings" },
+      "description": "Platform-wide configuration settings."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Administrative audit trail."
+    },
+    "/webhook_events/{eventId}": {
+      "schema": { "$ref": "#/entities/WebhookEvent" },
+      "description": "Server-only webhook deduplication records."
+    }
+  }
+}

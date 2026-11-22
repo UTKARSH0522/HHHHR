@@ -1,0 +1,1360 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- GLOBAL PRIMITIVES ---
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      let path = /databases/$(database)/documents/admins/$(request.auth.uid);
+      return isSignedIn() && (
+        exists(path)
+          ? get(path).data.get('active', true) == true
+          : (
+              request.auth.token.get('admin', false) == true ||
+              ('email' in request.auth.token &&
+               request.auth.token.email == 'utkarsh.work.contact@gmail.com' &&
+               request.auth.token.email_verified == true)
+            )
+      );
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isStringList(listVal, maxLen) {
+      return listVal is list && listVal.size() <= maxLen && (listVal.size() == 0 || listVal[0] is string);
+    }
+
+    // --- ENTITY VALIDATION BLUEPRINTS ---
+
+    function isValidUserAccount(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             (!('verifiedGoogleEmail' in data) || (data.verifiedGoogleEmail is string && data.verifiedGoogleEmail.size() <= 200)) &&
+             (!('emailVerified' in data) || data.emailVerified is bool) &&
+             data.role in ['CUSTOMER', 'EXPERT'] &&
+             data.accountStatus in ['ACTIVE', 'SUSPENDED'] &&
+             isStringList(data.savedExpertIds, 50) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidUserPrivateInfo(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.email is string && data.email.size() <= 200 &&
+             data.phone is string && data.phone.size() <= 30 &&
+             data.city is string && data.city.size() <= 100 &&
+             data.notifyBookings is bool &&
+             data.notifyPayments is bool &&
+             data.notifyReviews is bool &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidEmailAuditLog(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.previousEmail is string && data.previousEmail.size() <= 200 &&
+             data.newContactEmail is string && data.newContactEmail.size() <= 200 &&
+             data.verifiedGoogleEmail is string && data.verifiedGoogleEmail.size() <= 200 &&
+             data.reverificationRequired is bool &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidSpecialisation(data) {
+      return data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+             data.description is string && data.description.size() <= 500 &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 500 &&
+             data.active is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidExpertProfile(data) {
+      return data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 120 &&
+             (!('verifiedGoogleEmail' in data) || (data.verifiedGoogleEmail is string && data.verifiedGoogleEmail.size() <= 200)) &&
+             (!('googleEmailVerified' in data) || data.googleEmailVerified is bool) &&
+             data.headline is string && data.headline.size() >= 3 && data.headline.size() <= 180 &&
+             data.designation is string && data.designation.size() >= 2 && data.designation.size() <= 120 &&
+             (!('organization' in data) || (data.organization is string && data.organization.size() <= 120)) &&
+             data.yearsExperience is int && data.yearsExperience >= 0 && data.yearsExperience <= 60 &&
+             data.bio is string && data.bio.size() >= 10 && data.bio.size() <= 3000 &&
+             data.primarySpecialisation is string && data.primarySpecialisation.size() >= 2 && data.primarySpecialisation.size() <= 100 &&
+             isStringList(data.specialisations, 10) &&
+             isStringList(data.skills, 15) &&
+             (!('industryExperience' in data) || (data.industryExperience is string && data.industryExperience.size() <= 300)) &&
+             (!('linkedInUrl' in data) || (data.linkedInUrl is string && data.linkedInUrl.size() <= 400)) &&
+             (!('introVideoUrl' in data) || (data.introVideoUrl is string && data.introVideoUrl.size() <= 400)) &&
+             (!('verificationNotes' in data) || (data.verificationNotes is string && data.verificationNotes.size() <= 1000)) &&
+             data.verificationStatus in ['PENDING', 'APPROVED', 'REJECTED'] &&
+             (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 500)) &&
+             data.accountStatus in ['ACTIVE', 'SUSPENDED'] &&
+             data.demoProfile is bool &&
+             data.startingPriceInr is int && data.startingPriceInr >= 0 && data.startingPriceInr <= 500000 &&
+             data.referralCode is string && data.referralCode.size() >= 3 && data.referralCode.size() <= 32 &&
+             data.timezone is string && data.timezone.size() >= 3 && data.timezone.size() <= 64 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidConsultationService(data) {
+      return data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.expertName is string && data.expertName.size() >= 2 && data.expertName.size() <= 120 &&
+             data.title is string && data.title.size() >= 3 && data.title.size() <= 160 &&
+             data.description is string && data.description.size() >= 10 && data.description.size() <= 2000 &&
+             data.specialisation is string && data.specialisation.size() >= 2 && data.specialisation.size() <= 100 &&
+             data.durationMinutes in [15, 30, 45, 60, 90] &&
+             data.priceInr is int && data.priceInr >= 100 && data.priceInr <= 250000 &&
+             data.pricePaise is int && data.pricePaise == data.priceInr * 100 &&
+             data.consultationFormat is string && data.consultationFormat.size() >= 3 && data.consultationFormat.size() <= 80 &&
+             (!('preparationInstructions' in data) || (data.preparationInstructions is string && data.preparationInstructions.size() <= 1000)) &&
+             data.active is bool &&
+             data.demoService is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAvailabilityRule(data) {
+      return data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.dayOfWeek is int && data.dayOfWeek >= 1 && data.dayOfWeek <= 7 &&
+             data.enabled is bool &&
+             data.startMinute is int && data.startMinute >= 0 && data.startMinute < 1440 &&
+             data.endMinute is int && data.endMinute > data.startMinute && data.endMinute <= 1440 &&
+             data.breakStartMinute is int && data.breakStartMinute >= -1 && data.breakStartMinute < 1440 &&
+             data.breakEndMinute is int && data.breakEndMinute >= -1 && data.breakEndMinute <= 1440 &&
+             data.timezone is string && data.timezone.size() >= 3 && data.timezone.size() <= 64 &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAvailabilityException(data) {
+      return data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.dateIso is string && data.dateIso.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             data.unavailable is bool &&
+             data.reason is string && data.reason.size() <= 200 &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidBooking(data) {
+      return data.customerUid is string && data.customerUid.size() >= 1 &&
+             data.customerName is string && data.customerName.size() >= 1 &&
+             data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 &&
+             data.expertName is string && data.expertName.size() >= 2 &&
+             data.serviceId is string && isValidId(data.serviceId) &&
+             data.serviceTitle is string && data.serviceTitle.size() >= 3 &&
+             data.durationMinutes in [15, 30, 45, 60, 90] &&
+             data.dateIso is string && data.dateIso.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             data.startMinute is int && data.startMinute >= 0 && data.startMinute < 1440 &&
+             data.endMinute is int && data.endMinute > data.startMinute && data.endMinute <= 1440 &&
+             data.slotKey is string && data.slotKey.size() >= 5 &&
+             data.timezone is string && data.timezone.size() >= 3 &&
+             data.topic is string && data.topic.size() >= 3 && data.topic.size() <= 1000 &&
+             data.referralType in ['PLATFORM', 'EXPERT_REFERRAL'] &&
+             data.amountPaise is int && data.amountPaise >= 10000 && data.amountPaise <= 25000000 &&
+             data.commissionRateBps is int && data.commissionRateBps >= 0 && data.commissionRateBps <= 5000 &&
+             data.commissionPaise is int && data.commissionPaise >= 0 &&
+             data.expertEarningPaise is int && data.expertEarningPaise >= 0 &&
+             data.get('refundedAmountPaise', 0) >= 0 &&
+             data.get('refundedAmountPaise', 0) <= data.amountPaise &&
+             data.commissionPaise + data.expertEarningPaise + data.get('taxDeductionPaise', 0) == data.amountPaise &&
+             data.bookingStatus in [
+               'PENDING_PAYMENT', 'CONFIRMED', 'SCHEDULED', 'IN_PROGRESS',
+               'ATTENDANCE_PENDING', 'COMPLETION_PENDING', 'COMPLETED',
+               'CANCELLED', 'DISPUTED', 'REFUNDED'
+             ] &&
+             data.paymentStatus in [
+               'CREATED', 'PENDING', 'SUCCESS', 'FAILED',
+               'REFUND_PENDING', 'PARTIALLY_REFUNDED', 'REFUNDED'
+             ] &&
+             data.get('attendanceStatus', 'NOT_STARTED') in [
+               'NOT_STARTED', 'IN_PROGRESS', 'VERIFIED', 'PARTIALLY_VERIFIED',
+               'MISMATCH', 'MANUAL_REVIEW', 'FAILED'
+             ] &&
+             data.get('attendanceVerificationSource', 'NONE') in [
+               'NONE', 'GOOGLE_MEET_REST_API', 'SUPPLEMENTARY_CHECKIN_FALLBACK', 'ADMIN_MANUAL_REVIEW'
+             ] &&
+             data.get('payoutEligibilityStatus', 'NOT_ELIGIBLE') in [
+               'NOT_ELIGIBLE', 'ON_HOLD', 'ELIGIBLE', 'PROCESSING', 'PAID', 'FAILED', 'REVERSED'
+             ] &&
+             data.get('disputeStatus', 'NONE') in [
+               'NONE', 'OPEN', 'UNDER_REVIEW', 'RESOLVED_REFUND_FULL',
+               'RESOLVED_REFUND_PARTIAL', 'RESOLVED_RELEASE_EXPERT', 'CLOSED'
+             ] &&
+             data.holdExpiresAtEpochMs is int && data.holdExpiresAtEpochMs > 0 &&
+             data.reviewed is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSlotLock(data) {
+      return data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.holderUid is string && data.holderUid.size() >= 1 && data.holderUid.size() <= 128 &&
+             data.bookingId is string && isValidId(data.bookingId) &&
+             data.dateIso is string && data.dateIso.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+             data.startMinute is int && data.startMinute >= 0 && data.startMinute < 1440 &&
+             data.endMinute is int && data.endMinute > data.startMinute && data.endMinute <= 1440 &&
+             data.bookingStatus in [
+               'PENDING_PAYMENT', 'CONFIRMED', 'SCHEDULED', 'IN_PROGRESS',
+               'ATTENDANCE_PENDING', 'COMPLETION_PENDING', 'COMPLETED',
+               'CANCELLED', 'DISPUTED', 'REFUNDED'
+             ] &&
+             data.holdExpiresAtEpochMs is int && data.holdExpiresAtEpochMs > 0 &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPaymentRecord(data) {
+      return data.bookingId is string && isValidId(data.bookingId) &&
+             data.customerUid is string && data.customerUid.size() >= 1 && data.customerUid.size() <= 128 &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.razorpayOrderId is string && data.razorpayOrderId.size() >= 5 && data.razorpayOrderId.size() <= 128 &&
+             (!('razorpayPaymentId' in data) || (data.razorpayPaymentId is string && data.razorpayPaymentId.size() <= 128)) &&
+             (!('razorpaySignature' in data) || (data.razorpaySignature is string && data.razorpaySignature.size() <= 256)) &&
+             data.paymentMethod is string && data.paymentMethod.size() >= 2 && data.paymentMethod.size() <= 40 &&
+             data.currency == 'INR' &&
+             data.amountPaise is int && data.amountPaise >= 10000 &&
+             data.commissionPaise is int && data.commissionPaise >= 0 &&
+             (!('gatewayFeePaise' in data) || (data.gatewayFeePaise is int && data.gatewayFeePaise >= 0)) &&
+             (!('taxDeductionPaise' in data) || (data.taxDeductionPaise is int && data.taxDeductionPaise >= 0)) &&
+             data.expertEarningPaise is int && data.expertEarningPaise >= 0 &&
+             (!('refundedAmountPaise' in data) || (data.refundedAmountPaise is int && data.refundedAmountPaise >= 0 && data.refundedAmountPaise <= data.amountPaise)) &&
+             data.commissionPaise + data.expertEarningPaise + data.get('taxDeductionPaise', 0) == data.amountPaise &&
+             data.paymentStatus in [
+               'CREATED', 'PENDING', 'SUCCESS', 'FAILED',
+               'REFUND_PENDING', 'PARTIALLY_REFUNDED', 'REFUNDED'
+             ] &&
+             (!('providerSettlementStatus' in data) || data.providerSettlementStatus in [
+               'PENDING_CAPTURE', 'CAPTURED_UNSETTLED', 'SETTLED', 'REFUNDED', 'SANDBOX_SETTLED'
+             ]) &&
+             (!('serverVerified' in data) || data.serverVerified is bool) &&
+             (!('webhookEventId' in data) || (data.webhookEventId is string && data.webhookEventId.size() <= 160)) &&
+             data.idempotencyKey is string && data.idempotencyKey.size() >= 5 && data.idempotencyKey.size() <= 160 &&
+             data.testMode is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidLedgerEntry(data) {
+      return data.entryType in [
+               'PAYMENT_CAPTURED', 'PLATFORM_COMMISSION', 'EXPERT_EARNING',
+               'GATEWAY_FEE', 'TAX_DEDUCTION',
+               'CANCELLATION_ADJUSTMENT', 'DISPUTE_HOLD', 'DISPUTE_RELEASE',
+               'REFUND_INITIATED', 'REFUND_COMPLETED', 'REFUND_PROCESSED',
+               'COMMISSION_REVERSAL', 'PAYOUT_INITIATED', 'PAYOUT_COMPLETED',
+               'PAYOUT_FAILED', 'PAYOUT_DISBURSED', 'RECONCILIATION_ADJUSTMENT'
+             ] &&
+             (!('direction' in data) || data.direction in ['CREDIT', 'DEBIT']) &&
+             (!('entryStatus' in data) || data.entryStatus in ['PENDING', 'SETTLED', 'REVERSED', 'FAILED']) &&
+             (!('bookingId' in data) || (data.bookingId is string && data.bookingId.size() <= 128)) &&
+             (!('paymentId' in data) || (data.paymentId is string && data.paymentId.size() <= 128)) &&
+             (!('payoutRequestId' in data) || (data.payoutRequestId is string && data.payoutRequestId.size() <= 128)) &&
+             data.customerUid is string && data.customerUid.size() <= 128 &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.amountPaise is int && data.amountPaise >= 0 &&
+             data.currency == 'INR' &&
+             (!('idempotencyKey' in data) || (data.idempotencyKey is string && data.idempotencyKey.size() <= 160)) &&
+             data.description is string && data.description.size() >= 3 && data.description.size() <= 300 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidAttendanceRecord(data) {
+      return data.bookingId is string && isValidId(data.bookingId) &&
+             data.customerUid is string && data.customerUid.size() >= 1 && data.customerUid.size() <= 128 &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             (!('expectedCustomerEmail' in data) || (data.expectedCustomerEmail is string && data.expectedCustomerEmail.size() <= 200)) &&
+             (!('expectedExpertEmail' in data) || (data.expectedExpertEmail is string && data.expectedExpertEmail.size() <= 200)) &&
+             (!('conferenceRecordId' in data) || (data.conferenceRecordId is string && data.conferenceRecordId.size() <= 200)) &&
+             (!('googleMeetSpaceId' in data) || (data.googleMeetSpaceId is string && data.googleMeetSpaceId.size() <= 200)) &&
+             data.verificationSource in ['NONE', 'GOOGLE_MEET_REST_API', 'SUPPLEMENTARY_CHECKIN_FALLBACK', 'ADMIN_MANUAL_REVIEW'] &&
+             data.attendanceStatus in ['NOT_STARTED', 'IN_PROGRESS', 'VERIFIED', 'PARTIALLY_VERIFIED', 'MISMATCH', 'MANUAL_REVIEW', 'FAILED'] &&
+             (!('customerDurationMinutes' in data) || (data.customerDurationMinutes is int && data.customerDurationMinutes >= 0)) &&
+             (!('expertDurationMinutes' in data) || (data.expertDurationMinutes is int && data.expertDurationMinutes >= 0)) &&
+             (!('overlapMinutes' in data) || (data.overlapMinutes is int && data.overlapMinutes >= 0)) &&
+             (!('minimumRequiredMinutes' in data) || (data.minimumRequiredMinutes is int && data.minimumRequiredMinutes >= 0)) &&
+             (!('unmatchedParticipantDetails' in data) || (data.unmatchedParticipantDetails is string && data.unmatchedParticipantDetails.size() <= 500)) &&
+             (!('evaluatorSummary' in data) || (data.evaluatorSummary is string && data.evaluatorSummary.size() <= 500)) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidDisputeRecord(data) {
+      return data.bookingId is string && isValidId(data.bookingId) &&
+             data.customerUid is string && data.customerUid.size() >= 1 && data.customerUid.size() <= 128 &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.raisedByUid is string && data.raisedByUid.size() >= 1 && data.raisedByUid.size() <= 128 &&
+             data.reason is string && data.reason.size() >= 5 && data.reason.size() <= 800 &&
+             (!('evidenceSummary' in data) || (data.evidenceSummary is string && data.evidenceSummary.size() <= 1000)) &&
+             data.status in [
+               'NONE', 'OPEN', 'UNDER_REVIEW', 'RESOLVED_REFUND_FULL',
+               'RESOLVED_REFUND_PARTIAL', 'RESOLVED_RELEASE_EXPERT', 'CLOSED'
+             ] &&
+             (!('requestedRefundPaise' in data) || (data.requestedRefundPaise is int && data.requestedRefundPaise >= 0)) &&
+             (!('approvedRefundPaise' in data) || (data.approvedRefundPaise is int && data.approvedRefundPaise >= 0)) &&
+             (!('resolutionNote' in data) || (data.resolutionNote is string && data.resolutionNote.size() <= 500)) &&
+             (!('resolvedByUid' in data) || (data.resolvedByUid is string && data.resolvedByUid.size() <= 128)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPayoutRequest(data) {
+      return data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.expertName is string && data.expertName.size() >= 2 && data.expertName.size() <= 120 &&
+             data.amountPaise is int && data.amountPaise >= 10000 &&
+             data.payoutDestination is string && data.payoutDestination.size() >= 4 && data.payoutDestination.size() <= 200 &&
+             (!('eligibleBookingIds' in data) || isStringList(data.eligibleBookingIds, 100)) &&
+             (!('idempotencyKey' in data) || (data.idempotencyKey is string && data.idempotencyKey.size() <= 160)) &&
+             data.status in ['PENDING', 'APPROVED', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED'] &&
+             (!('payoutReference' in data) || (data.payoutReference is string && data.payoutReference.size() <= 128)) &&
+             (!('providerTransferId' in data) || (data.providerTransferId is string && data.providerTransferId.size() <= 128)) &&
+             (!('failureReason' in data) || (data.failureReason is string && data.failureReason.size() <= 300)) &&
+             (!('retryCount' in data) || (data.retryCount is int && data.retryCount >= 0 && data.retryCount <= 20)) &&
+             (!('adminNote' in data) || (data.adminNote is string && data.adminNote.size() <= 500)) &&
+             (!('processedByUid' in data) || (data.processedByUid is string && data.processedByUid.size() <= 128)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidReview(data) {
+      return data.bookingId is string && isValidId(data.bookingId) &&
+             data.expertId is string && isValidId(data.expertId) &&
+             data.expertUid is string && data.expertUid.size() >= 1 && data.expertUid.size() <= 128 &&
+             data.customerUid is string && data.customerUid.size() >= 1 && data.customerUid.size() <= 128 &&
+             data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 120 &&
+             data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+             data.comment is string && data.comment.size() <= 1000 &&
+             data.reported is bool &&
+             (!('reportReason' in data) || (data.reportReason is string && data.reportReason.size() <= 300)) &&
+             data.moderationStatus in ['VISIBLE', 'HIDDEN'] &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidNotification(data) {
+      return data.recipientUid is string && data.recipientUid.size() >= 1 && data.recipientUid.size() <= 128 &&
+             data.title is string && data.title.size() >= 2 && data.title.size() <= 160 &&
+             data.message is string && data.message.size() >= 2 && data.message.size() <= 500 &&
+             data.eventType is string && data.eventType.size() >= 2 && data.eventType.size() <= 60 &&
+             (!('relatedBookingId' in data) || (data.relatedBookingId is string && data.relatedBookingId.size() <= 128)) &&
+             data.read is bool &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidPlatformSettings(data) {
+      return data.brandName is string && data.brandName.size() >= 2 && data.brandName.size() <= 60 &&
+             data.platformCommissionBps is int && data.platformCommissionBps >= 0 && data.platformCommissionBps <= 5000 &&
+             data.referralCommissionBps is int && data.referralCommissionBps >= 0 && data.referralCommissionBps <= 5000 &&
+             (!('gatewayFeeBps' in data) || (data.gatewayFeeBps is int && data.gatewayFeeBps >= 0 && data.gatewayFeeBps <= 1000)) &&
+             (!('gstOnCommissionBps' in data) || (data.gstOnCommissionBps is int && data.gstOnCommissionBps >= 0 && data.gstOnCommissionBps <= 3000)) &&
+             (!('tdsBps' in data) || (data.tdsBps is int && data.tdsBps >= 0 && data.tdsBps <= 3000)) &&
+             data.paymentHoldMinutes is int && data.paymentHoldMinutes >= 5 && data.paymentHoldMinutes <= 60 &&
+             data.cancellationWindowHours is int && data.cancellationWindowHours >= 0 && data.cancellationWindowHours <= 168 &&
+             (!('disputeWindowHours' in data) || (data.disputeWindowHours is int && data.disputeWindowHours >= 1 && data.disputeWindowHours <= 168)) &&
+             (!('minMeetAttendanceMinutes' in data) || (data.minMeetAttendanceMinutes is int && data.minMeetAttendanceMinutes >= 1 && data.minMeetAttendanceMinutes <= 180)) &&
+             (!('minMeetAttendanceRatioBps' in data) || (data.minMeetAttendanceRatioBps is int && data.minMeetAttendanceRatioBps >= 1000 && data.minMeetAttendanceRatioBps <= 10000)) &&
+             data.defaultTimezone is string && data.defaultTimezone.size() >= 3 && data.defaultTimezone.size() <= 64 &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAuditLog(data) {
+      return data.actorUid is string && data.actorUid.size() >= 1 && data.actorUid.size() <= 128 &&
+             data.actorEmail is string && data.actorEmail.size() <= 200 &&
+             data.action is string && data.action.size() >= 2 && data.action.size() <= 100 &&
+             data.targetType is string && data.targetType.size() >= 2 && data.targetType.size() <= 60 &&
+             data.targetId is string && data.targetId.size() >= 1 && data.targetId.size() <= 128 &&
+             data.details is string && data.details.size() <= 1000 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && request.auth.uid == adminId;
+      allow list, create, update, delete: if false;
+    }
+
+    match /webhook_events/{eventId} {
+      allow get, list: if isAdmin();
+      allow create, update, delete: if false;
+    }
+
+    match /email_audit_logs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(logId) &&
+                       isSignedIn() &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'previousEmail', 'newContactEmail',
+                         'verifiedGoogleEmail', 'reverificationRequired', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'previousEmail', 'newContactEmail',
+                         'verifiedGoogleEmail', 'reverificationRequired', 'createdAt'
+                       ]) &&
+                       isValidEmailAuditLog(incoming());
+
+      allow update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().accountStatus == 'ACTIVE' &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'role', 'accountStatus', 'savedExpertIds', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'verifiedGoogleEmail', 'emailVerified',
+                         'role', 'accountStatus', 'savedExpertIds', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserAccount(incoming());
+
+      allow update: if isValidId(userId) &&
+                       isSignedIn() &&
+                       isValidUserAccount(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           isOwner(userId) &&
+                           incoming().accountStatus == existing().accountStatus &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'displayName', 'verifiedGoogleEmail', 'emailVerified',
+                             'role', 'savedExpertIds', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if false;
+
+      match /private/{docId} {
+        allow get: if isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(docId) &&
+                         (isOwner(userId) || isAdmin()) &&
+                         incoming().userId == userId &&
+                         incoming().keys().hasAll(['userId', 'email', 'phone', 'city', 'notifyBookings', 'notifyPayments', 'notifyReviews', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'email', 'phone', 'city', 'notifyBookings', 'notifyPayments', 'notifyReviews', 'updatedAt']) &&
+                         isValidUserPrivateInfo(incoming());
+
+        allow update: if isValidId(userId) && isValidId(docId) &&
+                         (isOwner(userId) || isAdmin()) &&
+                         isValidUserPrivateInfo(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['email', 'phone', 'city', 'notifyBookings', 'notifyPayments', 'notifyReviews', 'updatedAt']);
+
+        allow delete: if false;
+      }
+
+      match /fcm_tokens/{tokenId} {
+        allow get, list: if isValidId(userId) && isOwner(userId);
+        allow create, update: if isValidId(userId) && isValidId(tokenId) &&
+                                 isOwner(userId) &&
+                                 incoming().userId == userId &&
+                                 incoming().token is string &&
+                                 incoming().token.size() >= 20 &&
+                                 incoming().token.size() <= 512 &&
+                                 incoming().platform is string &&
+                                 incoming().deviceId is string &&
+                                 incoming().enabled is bool &&
+                                 incoming().keys().hasAll(['userId', 'token', 'platform', 'deviceId', 'enabled', 'updatedAt']) &&
+                                 incoming().keys().hasOnly(['userId', 'token', 'platform', 'deviceId', 'enabled', 'updatedAt']) &&
+                                 isValidTimestamp(incoming().updatedAt);
+        allow delete: if isValidId(userId) && isValidId(tokenId) && isOwner(userId);
+      }
+    }
+
+    match /specialisations/{specId} {
+      allow get: if isSignedIn() && isValidId(specId);
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(specId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['name', 'description', 'sortOrder', 'active', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['name', 'description', 'sortOrder', 'active', 'createdAt', 'updatedAt']) &&
+                       isValidSpecialisation(incoming());
+
+      allow update: if isValidId(specId) &&
+                       isAdmin() &&
+                       isValidSpecialisation(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'sortOrder', 'active', 'updatedAt']);
+
+      allow delete: if isValidId(specId) && isAdmin();
+    }
+
+    match /experts/{expertId} {
+      allow get: if isSignedIn() && isValidId(expertId) && (
+        (resource.data.verificationStatus == 'APPROVED' && resource.data.accountStatus == 'ACTIVE') ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        (resource.data.verificationStatus == 'APPROVED' && resource.data.accountStatus == 'ACTIVE') ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(expertId) &&
+                       isSignedIn() &&
+                       isValidExpertProfile(incoming()) &&
+                       incoming().keys().hasAll([
+                         'expertUid', 'fullName', 'headline', 'designation', 'yearsExperience',
+                         'bio', 'primarySpecialisation', 'specialisations', 'skills',
+                         'verificationStatus', 'accountStatus', 'demoProfile', 'startingPriceInr',
+                         'referralCode', 'timezone', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'expertUid', 'fullName', 'verifiedGoogleEmail', 'googleEmailVerified',
+                         'headline', 'designation', 'organization',
+                         'yearsExperience', 'bio', 'primarySpecialisation', 'specialisations',
+                         'skills', 'industryExperience', 'linkedInUrl', 'introVideoUrl',
+                         'verificationNotes', 'verificationStatus', 'rejectionReason',
+                         'accountStatus', 'demoProfile', 'startingPriceInr', 'referralCode',
+                         'timezone', 'createdAt', 'updatedAt'
+                       ]) && (
+                         isAdmin() || (
+                           incoming().expertUid == request.auth.uid &&
+                           incoming().verificationStatus == 'PENDING' &&
+                           incoming().accountStatus == 'ACTIVE' &&
+                           incoming().demoProfile == false
+                         )
+                       );
+
+      allow update: if isValidId(expertId) &&
+                       isSignedIn() &&
+                       isValidExpertProfile(incoming()) &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().demoProfile == existing().demoProfile &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           existing().expertUid == request.auth.uid &&
+                           incoming().accountStatus == existing().accountStatus &&
+                           (incoming().verificationStatus == existing().verificationStatus || (existing().verificationStatus == 'REJECTED' && incoming().verificationStatus == 'PENDING')) &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'fullName', 'verifiedGoogleEmail', 'googleEmailVerified',
+                             'headline', 'designation', 'organization',
+                             'yearsExperience', 'bio', 'primarySpecialisation', 'specialisations',
+                             'skills', 'industryExperience', 'linkedInUrl', 'introVideoUrl',
+                             'verificationNotes', 'verificationStatus', 'startingPriceInr',
+                             'timezone', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if false;
+
+      match /payout_secrets/{docId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /services/{serviceId} {
+      allow get: if isSignedIn() && isValidId(serviceId) && (
+        resource.data.active == true ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.active == true ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(serviceId) &&
+                       isSignedIn() &&
+                       isValidConsultationService(incoming()) &&
+                       incoming().keys().hasAll([
+                         'expertId', 'expertUid', 'expertName', 'title', 'description',
+                         'specialisation', 'durationMinutes', 'priceInr', 'pricePaise',
+                         'consultationFormat', 'active', 'demoService', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'expertId', 'expertUid', 'expertName', 'title', 'description',
+                         'specialisation', 'durationMinutes', 'priceInr', 'pricePaise',
+                         'consultationFormat', 'preparationInstructions', 'active',
+                         'demoService', 'createdAt', 'updatedAt'
+                       ]) && (
+                         isAdmin() || (
+                           incoming().expertUid == request.auth.uid &&
+                           incoming().demoService == false &&
+                           exists(/databases/$(database)/documents/experts/$(incoming().expertId)) &&
+                           get(/databases/$(database)/documents/experts/$(incoming().expertId)).data.expertUid == request.auth.uid &&
+                           get(/databases/$(database)/documents/experts/$(incoming().expertId)).data.verificationStatus == 'APPROVED' &&
+                           get(/databases/$(database)/documents/experts/$(incoming().expertId)).data.accountStatus == 'ACTIVE'
+                         )
+                       );
+
+      allow update: if isValidId(serviceId) &&
+                       isSignedIn() &&
+                       isValidConsultationService(incoming()) &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().demoService == existing().demoService &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           existing().expertUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'expertName', 'title', 'description', 'specialisation',
+                             'durationMinutes', 'priceInr', 'pricePaise', 'consultationFormat',
+                             'preparationInstructions', 'active', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if isValidId(serviceId) && isAdmin();
+    }
+
+    match /availability_rules/{ruleId} {
+      allow get: if isSignedIn() && isValidId(ruleId);
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(ruleId) &&
+                       isSignedIn() &&
+                       isValidAvailabilityRule(incoming()) &&
+                       incoming().keys().hasAll([
+                         'expertId', 'expertUid', 'dayOfWeek', 'enabled',
+                         'startMinute', 'endMinute', 'breakStartMinute', 'breakEndMinute',
+                         'timezone', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'expertId', 'expertUid', 'dayOfWeek', 'enabled',
+                         'startMinute', 'endMinute', 'breakStartMinute', 'breakEndMinute',
+                         'timezone', 'updatedAt'
+                       ]) && (
+                         isAdmin() || (
+                           incoming().expertUid == request.auth.uid &&
+                           exists(/databases/$(database)/documents/experts/$(incoming().expertId)) &&
+                           get(/databases/$(database)/documents/experts/$(incoming().expertId)).data.expertUid == request.auth.uid
+                         )
+                       );
+
+      allow update: if isValidId(ruleId) &&
+                       isSignedIn() &&
+                       isValidAvailabilityRule(incoming()) &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().dayOfWeek == existing().dayOfWeek && (
+                         isAdmin() || (
+                           existing().expertUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'enabled', 'startMinute', 'endMinute',
+                             'breakStartMinute', 'breakEndMinute', 'timezone', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if false;
+    }
+
+    match /availability_exceptions/{exceptionId} {
+      allow get: if isSignedIn() && isValidId(exceptionId);
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(exceptionId) &&
+                       isSignedIn() &&
+                       isValidAvailabilityException(incoming()) &&
+                       incoming().keys().hasAll(['expertId', 'expertUid', 'dateIso', 'unavailable', 'reason', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['expertId', 'expertUid', 'dateIso', 'unavailable', 'reason', 'updatedAt']) && (
+                         isAdmin() || (
+                           incoming().expertUid == request.auth.uid &&
+                           exists(/databases/$(database)/documents/experts/$(incoming().expertId)) &&
+                           get(/databases/$(database)/documents/experts/$(incoming().expertId)).data.expertUid == request.auth.uid
+                         )
+                       );
+
+      allow update: if isValidId(exceptionId) &&
+                       isSignedIn() &&
+                       isValidAvailabilityException(incoming()) &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().expertUid == existing().expertUid && (
+                         isAdmin() || (
+                           existing().expertUid == request.auth.uid &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['unavailable', 'reason', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if isValidId(exceptionId) && (isAdmin() || (isSignedIn() && existing().expertUid == request.auth.uid));
+    }
+
+    function allowBookingCreate(bookingId) {
+      let d = incoming();
+      let expertDoc = get(/databases/$(database)/documents/experts/$(d.expertId)).data;
+      let serviceDoc = get(/databases/$(database)/documents/services/$(d.serviceId)).data;
+      let settingsExists = exists(/databases/$(database)/documents/platform_settings/config);
+      let expectedRateBps = !settingsExists
+        ? (d.referralType == 'EXPERT_REFERRAL' ? 1000 : 1500)
+        : (d.referralType == 'EXPERT_REFERRAL'
+            ? get(/databases/$(database)/documents/platform_settings/config).data.referralCommissionBps
+            : get(/databases/$(database)/documents/platform_settings/config).data.platformCommissionBps);
+      return isValidId(bookingId) &&
+             isSignedIn() &&
+             isValidBooking(d) &&
+             d.customerUid == request.auth.uid &&
+             d.expertUid != request.auth.uid &&
+             d.expertUid == expertDoc.expertUid &&
+             d.serviceId != '' &&
+             serviceDoc.expertId == d.expertId &&
+             d.slotKey == d.expertId + '_' + d.dateIso + '_' + string(d.startMinute) &&
+             d.endMinute == d.startMinute + d.durationMinutes &&
+             d.bookingStatus == 'PENDING_PAYMENT' &&
+             d.paymentStatus in ['CREATED', 'PENDING'] &&
+             d.get('attendanceStatus', 'NOT_STARTED') == 'NOT_STARTED' &&
+             d.get('attendanceVerificationSource', 'NONE') == 'NONE' &&
+             d.get('refundedAmountPaise', 0) == 0 &&
+             d.get('payoutEligibilityStatus', 'NOT_ELIGIBLE') == 'NOT_ELIGIBLE' &&
+             d.get('customerCompletedConfirmed', false) == false &&
+             d.get('expertCompletedConfirmed', false) == false &&
+             d.reviewed == false &&
+             d.commissionRateBps == expectedRateBps &&
+             d.commissionPaise * 10000 <= d.amountPaise * d.commissionRateBps &&
+             (d.commissionPaise + 1) * 10000 > d.amountPaise * d.commissionRateBps &&
+             getAfter(/databases/$(database)/documents/slot_locks/$(d.slotKey)).data.bookingId == bookingId &&
+             getAfter(/databases/$(database)/documents/slot_locks/$(d.slotKey)).data.holderUid == request.auth.uid &&
+             d.keys().hasOnly([
+               'customerUid', 'customerName', 'verifiedCustomerGoogleEmail',
+               'expertId', 'expertUid', 'expertName', 'verifiedExpertGoogleEmail',
+               'serviceId', 'serviceTitle', 'durationMinutes', 'dateIso', 'startMinute',
+               'endMinute', 'slotKey', 'timezone', 'topic', 'preparationInstructions',
+               'referralType', 'referralCode', 'amountPaise', 'commissionRateBps',
+               'commissionPaise', 'gatewayFeePaise', 'taxDeductionPaise', 'expertEarningPaise',
+               'refundedAmountPaise', 'bookingStatus', 'paymentStatus',
+               'providerSettlementStatus', 'attendanceStatus', 'attendanceVerificationSource',
+               'payoutEligibilityStatus', 'disputeStatus', 'calendarSyncStatus',
+               'conferenceRequestId', 'meetingAccessMode', 'checkInPin',
+               'customerCheckInAtMs', 'expertCheckInAtMs', 'customerJoinedMinutes',
+               'expertJoinedMinutes', 'overlapMinutes', 'customerCompletedConfirmed',
+               'expertCompletedConfirmed', 'completedAtEpochMs', 'disputeWindowEndsAtEpochMs',
+               'holdExpiresAtEpochMs', 'meetingUrl', 'cancellationReason',
+               'cancelledByUid', 'reviewed', 'createdAt', 'updatedAt'
+             ]) &&
+             expertDoc.verificationStatus == 'APPROVED' &&
+             expertDoc.accountStatus == 'ACTIVE' &&
+             serviceDoc.active == true &&
+             serviceDoc.pricePaise == d.amountPaise &&
+             serviceDoc.durationMinutes == d.durationMinutes;
+    }
+
+    function allowBookingParticipantUpdate(bookingId, d, e) {
+      let isCust = e.customerUid == request.auth.uid;
+      let isExp = e.expertUid == request.auth.uid;
+      return (isCust || isExp) && (
+        // 1a. Customer payment failed
+        (isCust &&
+         d.bookingStatus == 'PENDING_PAYMENT' &&
+         e.bookingStatus == 'PENDING_PAYMENT' &&
+         d.paymentStatus in ['PENDING', 'FAILED'] &&
+         d.diff(e).affectedKeys().hasOnly(['paymentStatus', 'updatedAt'])) ||
+        // 1b. Customer confirms SANDBOX payment (requires unexpired hold & testMode==true payment doc)
+        (isCust &&
+         d.bookingStatus == 'CONFIRMED' &&
+         e.bookingStatus == 'PENDING_PAYMENT' &&
+         d.paymentStatus == 'SUCCESS' &&
+         request.time.toMillis() <= e.holdExpiresAtEpochMs &&
+         d.get('providerSettlementStatus', 'SANDBOX_SETTLED') == 'SANDBOX_SETTLED' &&
+         d.get('payoutEligibilityStatus', 'NOT_ELIGIBLE') == 'NOT_ELIGIBLE' &&
+         d.get('calendarSyncStatus', 'PENDING_BACKEND_SYNC') in ['NOT_SYNCED', 'PENDING_BACKEND_SYNC'] &&
+         getAfter(/databases/$(database)/documents/payments/$('pay_' + bookingId)).data.testMode == true &&
+         d.diff(e).affectedKeys().hasOnly([
+           'bookingStatus', 'paymentStatus', 'providerSettlementStatus',
+           'payoutEligibilityStatus', 'calendarSyncStatus', 'updatedAt'
+         ])) ||
+        // 2. Participant cancels pre-session booking (payout must stay NOT_ELIGIBLE/ON_HOLD/REVERSED)
+        (d.bookingStatus == 'CANCELLED' &&
+         e.bookingStatus in ['PENDING_PAYMENT', 'CONFIRMED', 'SCHEDULED'] &&
+         d.cancelledByUid == request.auth.uid &&
+         d.get('payoutEligibilityStatus', 'NOT_ELIGIBLE') in ['NOT_ELIGIBLE', 'ON_HOLD', 'REVERSED'] &&
+         d.diff(e).affectedKeys().hasOnly([
+           'bookingStatus', 'cancellationReason', 'cancelledByUid',
+           'payoutEligibilityStatus', 'updatedAt'
+         ])) ||
+        // 3. Customer marks COMPLETED booking as reviewed
+        (isCust &&
+         d.reviewed == true &&
+         e.reviewed == false &&
+         e.bookingStatus == 'COMPLETED' &&
+         d.diff(e).affectedKeys().hasOnly(['reviewed', 'updatedAt'])) ||
+        // 4a. Participant requests backend calendar sync (never sets SYNCED or Calendar/Meet IDs)
+        (e.bookingStatus in ['CONFIRMED', 'SCHEDULED'] &&
+         d.bookingStatus == e.bookingStatus &&
+         d.calendarSyncStatus == 'PENDING_BACKEND_SYNC' &&
+         d.calendarSyncStatus != e.get('calendarSyncStatus', '') &&
+         d.diff(e).affectedKeys().hasOnly(['calendarSyncStatus', 'updatedAt'])) ||
+        // 4b. Expert attaches manual HTTPS meeting URL directly (cannot spoof Google Calendar event/Meet space IDs)
+        (isExp &&
+         e.bookingStatus in ['CONFIRMED', 'SCHEDULED'] &&
+         d.bookingStatus == 'SCHEDULED' &&
+         d.meetingUrl is string &&
+         d.meetingUrl.matches('^https://.*') &&
+         d.diff(e).affectedKeys().hasOnly(['meetingUrl', 'bookingStatus', 'updatedAt'])) ||
+        // 5. Supplementary Check-In PIN / fallback attendance (cannot overwrite Meet/Admin states or spoof ADMIN_APPROVED)
+        (e.bookingStatus in ['CONFIRMED', 'SCHEDULED', 'IN_PROGRESS', 'ATTENDANCE_PENDING', 'COMPLETION_PENDING'] &&
+         d.bookingStatus in ['CONFIRMED', 'SCHEDULED', 'IN_PROGRESS', 'ATTENDANCE_PENDING', 'COMPLETION_PENDING'] &&
+         e.get('attendanceVerificationSource', 'NONE') in ['NONE', 'SUPPLEMENTARY_CHECKIN_FALLBACK'] &&
+         !(e.get('attendanceStatus', 'NOT_STARTED') in ['VERIFIED', 'FAILED', 'MISMATCH']) &&
+         d.get('attendanceStatus', 'NOT_STARTED') in ['NOT_STARTED', 'IN_PROGRESS', 'PARTIALLY_VERIFIED', 'MANUAL_REVIEW'] &&
+         d.get('attendanceVerificationSource', 'NONE') in ['NONE', 'SUPPLEMENTARY_CHECKIN_FALLBACK'] &&
+         (isCust || d.get('customerCheckInAtMs', 0) == e.get('customerCheckInAtMs', 0)) &&
+         (isExp || d.get('expertCheckInAtMs', 0) == e.get('expertCheckInAtMs', 0)) &&
+         !(d.get('attendanceNotes', '') is string && d.get('attendanceNotes', '').matches('(?i).*admin_approved.*')) &&
+         d.diff(e).affectedKeys().hasOnly([
+           'bookingStatus', 'customerCheckInAtMs', 'expertCheckInAtMs',
+           'attendanceVerificationSource', 'attendanceStatus', 'attendanceNotes', 'updatedAt'
+         ])) ||
+        // 6. Dual-party completion confirmation (enforces monotonic confirmations, >=24h dispute window, no ADMIN_APPROVED spoof)
+        (d.bookingStatus in ['COMPLETION_PENDING', 'COMPLETED'] &&
+         e.bookingStatus in ['CONFIRMED', 'SCHEDULED', 'IN_PROGRESS', 'ATTENDANCE_PENDING', 'COMPLETION_PENDING'] &&
+         (isCust || d.get('customerCompletedConfirmed', false) == e.get('customerCompletedConfirmed', false)) &&
+         (isExp || d.get('expertCompletedConfirmed', false) == e.get('expertCompletedConfirmed', false)) &&
+         (!e.get('customerCompletedConfirmed', false) || d.get('customerCompletedConfirmed', false) == true) &&
+         (!e.get('expertCompletedConfirmed', false) || d.get('expertCompletedConfirmed', false) == true) &&
+         !(d.get('attendanceNotes', '') is string && d.get('attendanceNotes', '').matches('(?i).*admin_approved.*')) &&
+         (
+           (d.get('customerCompletedConfirmed', false) == true &&
+            d.get('expertCompletedConfirmed', false) == true &&
+            d.bookingStatus == 'COMPLETED' &&
+            d.completedAtEpochMs is int &&
+            d.completedAtEpochMs >= request.time.toMillis() - 300000 &&
+            d.completedAtEpochMs <= request.time.toMillis() + 300000 &&
+            d.disputeWindowEndsAtEpochMs is int &&
+            d.disputeWindowEndsAtEpochMs >= request.time.toMillis() + 82800000) ||
+           (!(d.get('customerCompletedConfirmed', false) == true && d.get('expertCompletedConfirmed', false) == true) &&
+            d.bookingStatus == 'COMPLETION_PENDING' &&
+            d.get('completedAtEpochMs', e.get('completedAtEpochMs', 0)) == e.get('completedAtEpochMs', 0) &&
+            d.get('disputeWindowEndsAtEpochMs', e.get('disputeWindowEndsAtEpochMs', 0)) == e.get('disputeWindowEndsAtEpochMs', 0))
+         ) &&
+         (
+           d.get('attendanceStatus', 'NOT_STARTED') == e.get('attendanceStatus', 'NOT_STARTED') ||
+           (e.get('attendanceStatus', 'NOT_STARTED') == 'NOT_STARTED' && d.get('attendanceStatus', 'NOT_STARTED') == 'MANUAL_REVIEW')
+         ) &&
+         d.diff(e).affectedKeys().hasOnly([
+           'customerCompletedConfirmed', 'expertCompletedConfirmed', 'bookingStatus',
+           'completedAtEpochMs', 'disputeWindowEndsAtEpochMs',
+           'attendanceStatus', 'attendanceNotes', 'updatedAt'
+         ])) ||
+        // 7. Raise Dispute -> ON_HOLD
+        (d.bookingStatus == 'DISPUTED' &&
+         d.disputeStatus == 'OPEN' &&
+         d.payoutEligibilityStatus == 'ON_HOLD' &&
+         e.bookingStatus in ['CONFIRMED', 'SCHEDULED', 'IN_PROGRESS', 'ATTENDANCE_PENDING', 'COMPLETION_PENDING', 'COMPLETED'] &&
+         d.diff(e).affectedKeys().hasOnly(['bookingStatus', 'disputeStatus', 'disputeReason', 'payoutEligibilityStatus', 'updatedAt']))
+      );
+    }
+
+    function allowBookingUpdate(bookingId) {
+      let d = incoming();
+      let e = existing();
+      return isValidBookingUpdate(d) &&
+             d.customerUid == e.customerUid &&
+             d.expertId == e.expertId &&
+             d.expertUid == e.expertUid &&
+             d.serviceId == e.serviceId &&
+             d.amountPaise == e.amountPaise &&
+             d.commissionRateBps == e.commissionRateBps &&
+             d.commissionPaise == e.commissionPaise &&
+             d.expertEarningPaise == e.expertEarningPaise &&
+             d.referralType == e.referralType &&
+             d.createdAt == e.createdAt && (
+               isAdmin() || allowBookingParticipantUpdate(bookingId, d, e)
+             );
+    }
+
+    function isValidBookingUpdate(data) {
+      return data.get('refundedAmountPaise', 0) >= 0 &&
+             data.get('refundedAmountPaise', 0) <= data.amountPaise &&
+             data.bookingStatus in [
+               'PENDING_PAYMENT', 'CONFIRMED', 'SCHEDULED', 'IN_PROGRESS',
+               'ATTENDANCE_PENDING', 'COMPLETION_PENDING', 'COMPLETED',
+               'CANCELLED', 'DISPUTED', 'REFUNDED'
+             ] &&
+             data.paymentStatus in [
+               'CREATED', 'PENDING', 'SUCCESS', 'FAILED',
+               'REFUND_PENDING', 'PARTIALLY_REFUNDED', 'REFUNDED'
+             ] &&
+             data.get('attendanceStatus', 'NOT_STARTED') in [
+               'NOT_STARTED', 'IN_PROGRESS', 'VERIFIED', 'PARTIALLY_VERIFIED',
+               'MISMATCH', 'MANUAL_REVIEW', 'FAILED'
+             ] &&
+             data.get('attendanceVerificationSource', 'NONE') in [
+               'NONE', 'GOOGLE_MEET_REST_API', 'SUPPLEMENTARY_CHECKIN_FALLBACK', 'ADMIN_MANUAL_REVIEW'
+             ] &&
+             data.get('payoutEligibilityStatus', 'NOT_ELIGIBLE') in [
+               'NOT_ELIGIBLE', 'ON_HOLD', 'ELIGIBLE', 'PROCESSING', 'PAID', 'FAILED', 'REVERSED'
+             ] &&
+             data.get('disputeStatus', 'NONE') in [
+               'NONE', 'OPEN', 'UNDER_REVIEW', 'RESOLVED_REFUND_FULL',
+               'RESOLVED_REFUND_PARTIAL', 'RESOLVED_RELEASE_EXPERT', 'CLOSED'
+             ] &&
+             data.reviewed is bool &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && isValidId(bookingId) && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if allowBookingCreate(bookingId);
+
+      allow update: if isValidId(bookingId) &&
+                       isSignedIn() &&
+                       allowBookingUpdate(bookingId);
+
+      allow delete: if false;
+    }
+
+    match /slot_locks/{lockKey} {
+      allow get: if isSignedIn() && isValidId(lockKey);
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(lockKey) &&
+                       isSignedIn() &&
+                       isValidSlotLock(incoming()) &&
+                       lockKey == incoming().expertId + '_' + incoming().dateIso + '_' + string(incoming().startMinute) &&
+                       incoming().holderUid == request.auth.uid &&
+                       incoming().bookingStatus == 'PENDING_PAYMENT' &&
+                       getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerUid == request.auth.uid &&
+                       getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.slotKey == lockKey &&
+                       incoming().keys().hasAll([
+                         'expertId', 'expertUid', 'holderUid', 'bookingId', 'dateIso',
+                         'startMinute', 'endMinute', 'bookingStatus', 'holdExpiresAtEpochMs', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'expertId', 'expertUid', 'holderUid', 'bookingId', 'dateIso',
+                         'startMinute', 'endMinute', 'bookingStatus', 'holdExpiresAtEpochMs', 'updatedAt'
+                       ]);
+
+      allow update: if isValidId(lockKey) &&
+                       isSignedIn() &&
+                       isValidSlotLock(incoming()) &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().dateIso == existing().dateIso &&
+                       incoming().startMinute == existing().startMinute && (
+                         isAdmin() ||
+                         (
+                           (existing().holderUid == request.auth.uid || existing().expertUid == request.auth.uid) &&
+                           incoming().holderUid == existing().holderUid &&
+                           incoming().bookingId == existing().bookingId &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['bookingStatus', 'updatedAt'])
+                         ) ||
+                         (
+                           incoming().holderUid == request.auth.uid &&
+                           incoming().bookingStatus == 'PENDING_PAYMENT' &&
+                           (
+                             existing().bookingStatus in ['CANCELLED', 'REFUNDED'] ||
+                             (existing().bookingStatus == 'PENDING_PAYMENT' && request.time.toMillis() > existing().holdExpiresAtEpochMs)
+                           ) &&
+                           getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerUid == request.auth.uid &&
+                           getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.slotKey == lockKey
+                         )
+                       ) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'holderUid', 'bookingId', 'endMinute', 'bookingStatus', 'holdExpiresAtEpochMs', 'updatedAt'
+                       ]);
+
+      allow delete: if false;
+    }
+
+    match /payments/{paymentId} {
+      allow get: if isSignedIn() && isValidId(paymentId) && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      // Non-admin client creates ONLY testMode==true && serverVerified==false sandbox payment records
+      // with deterministic document IDs tied to their own booking; live serverVerified==true payments
+      // can only be written by backend Admin SDK / admin.
+      allow create: if isValidId(paymentId) &&
+                       isSignedIn() &&
+                       isValidPaymentRecord(incoming()) &&
+                       incoming().keys().hasAll([
+                         'bookingId', 'customerUid', 'expertUid', 'razorpayOrderId',
+                         'paymentMethod', 'currency', 'amountPaise', 'commissionPaise',
+                         'expertEarningPaise', 'paymentStatus', 'idempotencyKey', 'testMode',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'bookingId', 'customerUid', 'expertUid', 'razorpayOrderId',
+                         'razorpayPaymentId', 'razorpaySignature', 'paymentMethod', 'currency',
+                         'amountPaise', 'commissionPaise', 'gatewayFeePaise', 'taxDeductionPaise',
+                         'expertEarningPaise', 'refundedAmountPaise', 'paymentStatus',
+                         'providerSettlementStatus', 'serverVerified', 'webhookEventId',
+                         'idempotencyKey', 'testMode', 'createdAt', 'updatedAt'
+                       ]) && (
+                         isAdmin() || (
+                           incoming().customerUid == request.auth.uid &&
+                           incoming().testMode == true &&
+                           incoming().get('serverVerified', false) == false &&
+                           incoming().get('refundedAmountPaise', 0) == 0 &&
+                           incoming().paymentStatus in ['CREATED', 'PENDING', 'SUCCESS', 'FAILED'] &&
+                           incoming().get('providerSettlementStatus', 'PENDING_CAPTURE') in ['PENDING_CAPTURE', 'SANDBOX_SETTLED'] &&
+                           (
+                             paymentId == 'pay_' + incoming().bookingId ||
+                             (incoming().paymentStatus == 'FAILED' && paymentId.matches('^pay_fail_' + incoming().bookingId + '_[0-9]+$'))
+                           ) &&
+                           getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerUid == request.auth.uid &&
+                           getAfter(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.amountPaise == incoming().amountPaise
+                         )
+                       );
+
+      allow update: if isValidId(paymentId) &&
+                       isSignedIn() &&
+                       isValidPaymentRecord(incoming()) &&
+                       incoming().bookingId == existing().bookingId &&
+                       incoming().customerUid == existing().customerUid &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().amountPaise == existing().amountPaise &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           existing().customerUid == request.auth.uid &&
+                           existing().testMode == true &&
+                           incoming().testMode == true &&
+                           incoming().get('serverVerified', false) == false &&
+                           incoming().get('refundedAmountPaise', 0) == existing().get('refundedAmountPaise', 0) &&
+                           existing().paymentStatus in ['CREATED', 'PENDING'] &&
+                           incoming().paymentStatus in ['SUCCESS', 'FAILED'] &&
+                           incoming().diff(existing()).affectedKeys().hasOnly([
+                             'razorpayPaymentId', 'razorpaySignature', 'paymentMethod',
+                             'paymentStatus', 'providerSettlementStatus', 'updatedAt'
+                           ])
+                         )
+                       );
+
+      allow delete: if false;
+    }
+
+    match /ledger_entries/{entryId} {
+      allow get: if isSignedIn() && isValidId(entryId) && (
+        resource.data.expertUid == request.auth.uid ||
+        resource.data.customerUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.expertUid == request.auth.uid ||
+        resource.data.customerUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(entryId) &&
+                       isSignedIn() &&
+                       isValidLedgerEntry(incoming()) &&
+                       incoming().keys().hasAll([
+                         'entryType', 'customerUid', 'expertUid', 'amountPaise',
+                         'currency', 'description', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'entryType', 'direction', 'entryStatus', 'bookingId',
+                         'paymentId', 'payoutRequestId', 'customerUid', 'expertUid',
+                         'amountPaise', 'currency', 'idempotencyKey', 'description', 'createdAt'
+                       ]) && (
+                         isAdmin() ||
+                         (
+                           incoming().customerUid == request.auth.uid &&
+                           incoming().bookingId is string &&
+                           isValidId(incoming().bookingId) &&
+                           (
+                             (incoming().entryType == 'PAYMENT_CAPTURED' && entryId == 'led_cap_' + incoming().bookingId) ||
+                             (incoming().entryType == 'PLATFORM_COMMISSION' && entryId == 'led_comm_' + incoming().bookingId) ||
+                             (incoming().entryType == 'GATEWAY_FEE' && entryId == 'led_gw_' + incoming().bookingId) ||
+                             (incoming().entryType == 'TAX_DEDUCTION' && entryId == 'led_tax_' + incoming().bookingId) ||
+                             (incoming().entryType == 'EXPERT_EARNING' && entryId == 'led_earn_' + incoming().bookingId && incoming().get('entryStatus', 'PENDING') == 'PENDING')
+                           ) &&
+                           getAfter(/databases/$(database)/documents/payments/$('pay_' + incoming().bookingId)).data.testMode == true &&
+                           getAfter(/databases/$(database)/documents/payments/$('pay_' + incoming().bookingId)).data.customerUid == request.auth.uid &&
+                           incoming().amountPaise <= getAfter(/databases/$(database)/documents/payments/$('pay_' + incoming().bookingId)).data.amountPaise
+                         ) ||
+                         (
+                           incoming().get('direction', '') == 'DEBIT' &&
+                           incoming().bookingId is string &&
+                           isValidId(incoming().bookingId) &&
+                           (
+                             (incoming().entryType == 'CANCELLATION_ADJUSTMENT' && entryId == 'led_cancel_' + incoming().bookingId) ||
+                             (incoming().entryType == 'DISPUTE_HOLD' && entryId == 'led_hold_' + incoming().bookingId)
+                           ) &&
+                           exists(/databases/$(database)/documents/bookings/$(incoming().bookingId)) &&
+                           (
+                             get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerUid == request.auth.uid ||
+                             get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.expertUid == request.auth.uid
+                           ) &&
+                           incoming().amountPaise <= get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.expertEarningPaise
+                         )
+                       );
+
+      allow update, delete: if false;
+    }
+
+    match /attendance_records/{recordId} {
+      allow get: if isSignedIn() && isValidId(recordId) && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create, update: if isValidId(recordId) && isAdmin() && isValidAttendanceRecord(incoming());
+      allow delete: if false;
+    }
+
+    match /disputes/{disputeId} {
+      allow get: if isSignedIn() && isValidId(disputeId) && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.customerUid == request.auth.uid ||
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(disputeId) &&
+                       isSignedIn() &&
+                       isValidDisputeRecord(incoming()) &&
+                       incoming().keys().hasAll([
+                         'bookingId', 'customerUid', 'expertUid', 'raisedByUid',
+                         'reason', 'status', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'bookingId', 'customerUid', 'expertUid', 'raisedByUid',
+                         'reason', 'evidenceSummary', 'status', 'requestedRefundPaise',
+                         'approvedRefundPaise', 'resolutionNote', 'resolvedByUid',
+                         'createdAt', 'updatedAt'
+                       ]) && (
+                         isAdmin() || (
+                           (incoming().customerUid == request.auth.uid || incoming().expertUid == request.auth.uid) &&
+                           incoming().raisedByUid == request.auth.uid &&
+                           incoming().status == 'OPEN'
+                         )
+                       );
+
+      allow update: if isValidId(disputeId) &&
+                       isAdmin() &&
+                       isValidDisputeRecord(incoming()) &&
+                       incoming().bookingId == existing().bookingId &&
+                       incoming().customerUid == existing().customerUid &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().createdAt == existing().createdAt;
+
+      allow delete: if false;
+    }
+
+    match /payout_requests/{payoutId} {
+      allow get: if isSignedIn() && isValidId(payoutId) && (
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.expertUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(payoutId) &&
+                       isSignedIn() &&
+                       isValidPayoutRequest(incoming()) &&
+                       incoming().expertUid == request.auth.uid &&
+                       incoming().status == 'PENDING' &&
+                       incoming().eligibleBookingIds is list &&
+                       incoming().eligibleBookingIds.size() >= 1 &&
+                       incoming().get('retryCount', 0) == 0 &&
+                       !('payoutReference' in incoming()) &&
+                       !('providerTransferId' in incoming()) &&
+                       !('processedByUid' in incoming()) &&
+                       incoming().keys().hasAll([
+                         'expertId', 'expertUid', 'expertName', 'amountPaise',
+                         'payoutDestination', 'eligibleBookingIds', 'status', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'expertId', 'expertUid', 'expertName', 'amountPaise',
+                         'payoutDestination', 'eligibleBookingIds', 'idempotencyKey',
+                         'status', 'retryCount', 'createdAt', 'updatedAt'
+                       ]);
+
+      allow update: if isValidId(payoutId) &&
+                       isAdmin() &&
+                       isValidPayoutRequest(incoming()) &&
+                       existing().status != 'PAID' &&
+                       existing().status != 'REJECTED' &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().expertUid == existing().expertUid &&
+                       incoming().amountPaise == existing().amountPaise &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'status', 'payoutReference', 'providerTransferId',
+                         'failureReason', 'retryCount', 'adminNote', 'processedByUid', 'updatedAt'
+                       ]);
+
+      allow delete: if false;
+    }
+
+    match /reviews/{reviewId} {
+      allow get: if isSignedIn() && isValidId(reviewId);
+      allow list: if isSignedIn();
+
+      allow create: if isValidId(reviewId) &&
+                       isSignedIn() &&
+                       isValidReview(incoming()) &&
+                       reviewId == incoming().bookingId &&
+                       incoming().customerUid == request.auth.uid &&
+                       incoming().expertUid != request.auth.uid &&
+                       incoming().reported == false &&
+                       incoming().moderationStatus == 'VISIBLE' &&
+                       incoming().keys().hasAll([
+                         'bookingId', 'expertId', 'expertUid', 'customerUid', 'customerName',
+                         'rating', 'comment', 'reported', 'moderationStatus', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'bookingId', 'expertId', 'expertUid', 'customerUid', 'customerName',
+                         'rating', 'comment', 'reported', 'reportReason', 'moderationStatus',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       exists(/databases/$(database)/documents/bookings/$(incoming().bookingId)) &&
+                       get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.customerUid == request.auth.uid &&
+                       get(/databases/$(database)/documents/bookings/$(incoming().bookingId)).data.bookingStatus == 'COMPLETED';
+
+      allow update: if isValidId(reviewId) &&
+                       isSignedIn() &&
+                       isValidReview(incoming()) &&
+                       incoming().bookingId == existing().bookingId &&
+                       incoming().customerUid == existing().customerUid &&
+                       incoming().expertId == existing().expertId &&
+                       incoming().rating == existing().rating &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() || (
+                           incoming().reported == true &&
+                           incoming().moderationStatus == existing().moderationStatus &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['reported', 'reportReason', 'updatedAt'])
+                         )
+                       );
+
+      allow delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && (
+        resource.data.recipientUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow list: if isSignedIn() && (
+        resource.data.recipientUid == request.auth.uid ||
+        isAdmin()
+      );
+
+      allow create: if isValidId(notificationId) &&
+                       isSignedIn() &&
+                       isValidNotification(incoming()) &&
+                       incoming().read == false &&
+                       incoming().keys().hasAll([
+                         'recipientUid', 'title', 'message', 'eventType', 'read', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'recipientUid', 'title', 'message', 'eventType', 'relatedBookingId', 'read', 'createdAt'
+                       ]);
+
+      allow update: if isValidId(notificationId) &&
+                       isSignedIn() &&
+                       isValidNotification(incoming()) &&
+                       existing().recipientUid == request.auth.uid &&
+                       incoming().recipientUid == existing().recipientUid &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+
+      allow delete: if false;
+    }
+
+    match /platform_settings/{docId} {
+      allow get: if isSignedIn() && isValidId(docId);
+      allow list: if isSignedIn();
+
+      allow create, update: if isValidId(docId) &&
+                               isAdmin() &&
+                               isValidPlatformSettings(incoming()) &&
+                               incoming().keys().hasAll([
+                                 'brandName', 'platformCommissionBps', 'referralCommissionBps',
+                                 'paymentHoldMinutes', 'cancellationWindowHours', 'defaultTimezone', 'updatedAt'
+                               ]) &&
+                               incoming().keys().hasOnly([
+                                 'brandName', 'platformCommissionBps', 'referralCommissionBps',
+                                 'gatewayFeeBps', 'gstOnCommissionBps', 'tdsBps',
+                                 'paymentHoldMinutes', 'cancellationWindowHours', 'disputeWindowHours',
+                                 'minMeetAttendanceMinutes', 'minMeetAttendanceRatioBps',
+                                 'defaultTimezone', 'updatedAt'
+                               ]);
+
+      allow delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow get, list: if isAdmin();
+
+      allow create: if isValidId(logId) &&
+                       isAdmin() &&
+                       isValidAuditLog(incoming()) &&
+                       incoming().actorUid == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'actorUid', 'actorEmail', 'action', 'targetType', 'targetId', 'details', 'createdAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'actorUid', 'actorEmail', 'action', 'targetType', 'targetId', 'details', 'createdAt'
+                       ]);
+
+      allow update, delete: if false;
+    }
+  }
+}
